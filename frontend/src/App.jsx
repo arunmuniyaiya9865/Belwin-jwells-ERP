@@ -15,6 +15,15 @@ import TopUpLoan from './pages/TopUpLoan';
 import ReceivePayment from './pages/ReceivePayment';
 import PaymentHistory from './pages/PaymentHistory';
 import ReportsDashboard from './pages/ReportsDashboard';
+import AddExpense from './pages/AddExpense';
+import EditExpense from './pages/EditExpense';
+import ExpenseReport from './pages/ExpenseReport';
+import AddIncome from './pages/AddIncome';
+import EditIncome from './pages/EditIncome';
+import IncomeReport from './pages/IncomeReport';
+import AddDenomination from './pages/AddDenomination';
+import AddFollowup from './pages/AddFollowup';
+import CallReport from './pages/CallReport';
 
 function App() {
   return (
@@ -50,7 +59,18 @@ function App() {
             <Route path="/cash-assets-report" element={<ReportsDashboard />} />
             <Route path="/business-report" element={<ReportsDashboard />} />
 
-            {/* Other routes will go here */}
+            {/* Expenses */}
+            <Route path="/add-expense" element={<AddExpense />} />
+            <Route path="/edit-expense" element={<EditExpense />} />
+            <Route path="/expense-report" element={<ExpenseReport />} />
+            <Route path="/add-income" element={<AddIncome />} />
+            <Route path="/edit-income" element={<EditIncome />} />
+            <Route path="/income-report" element={<IncomeReport />} />
+            <Route path="/add-denomination" element={<AddDenomination />} />
+            {/* Customer Calls */}
+            <Route path="/add-followup" element={<AddFollowup />} />
+            <Route path="/call-report" element={<CallReport />} />
+            {/* Add other routes here later */}
           </Routes>
         </main>
       </div>
