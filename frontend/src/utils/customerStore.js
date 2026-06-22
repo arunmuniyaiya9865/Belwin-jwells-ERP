@@ -67,6 +67,6 @@ export function deleteCustomer(id) {
 export function searchCustomers(query) {
   const q = query.trim().toLowerCase();
   return getAllCustomers().filter(c =>
-    c.customerName.toLowerCase().includes(q) || c.mobileNumber.includes(q)
+    c.id.toLowerCase().includes(q) || c.mobileNumber.includes(q)
   );
 }

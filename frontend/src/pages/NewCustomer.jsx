@@ -158,14 +158,14 @@ const NewCustomer = () => {
                   <div className="flex items-center gap-2">
                     {key === 'proof2File' && (
                       <input type="text" name="proof2Name" value={formData.proof2Name} onChange={handleInputChange}
-                        placeholder="Proof name" className={`${inp} !py-1 !text-xs w-24 shrink-0`} />
+                        placeholder="Proof name" className="w-28 px-2 py-1.5 text-xs bg-white border border-gray-300 shadow-sm rounded-md focus:ring-1 focus:ring-green-500 focus:border-green-500 transition-colors shrink-0 outline-none" />
                     )}
                     <button type="button" onClick={() => ref.current.click()}
-                      className="flex items-center px-3 py-1.5 bg-gray-50 border border-gray-200 rounded-md text-xs font-medium text-gray-700 hover:bg-gray-100 shrink-0">
+                      className="flex items-center px-3 py-1.5 bg-white border border-gray-300 shadow-sm rounded-md text-xs font-medium text-gray-700 hover:bg-gray-50 shrink-0 transition-colors">
                       <Upload className="w-3 h-3 mr-1" /> Browse
                     </button>
                     <span className="text-xs text-gray-500 truncate">{files[key] ? files[key].name : 'No file'}</span>
-                    <input type="file" ref={ref} onChange={(e) => handleFileChange(e, key)} className="hidden" accept={accept} />
+                    <input type="file" ref={ref} onChange={e => handleFileChange(e, key)} className="hidden" accept={accept} />
                   </div>
                 </div>
               ))}

@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, Users, UserCheck, CalendarOff, IndianRupee, Building2, FileText, Settings, LogOut } from 'lucide-react';
+import { LayoutDashboard, Users, UserCheck, CalendarOff, IndianRupee, Building2, FileText, Settings, LogOut, PhoneCall, PhoneForwarded } from 'lucide-react';
 
 const Sidebar = () => {
   const menuItems = [
@@ -10,6 +10,8 @@ const Sidebar = () => {
     { name: 'Payroll', icon: IndianRupee, path: '/payroll' },
     { name: 'Department', icon: Building2, path: '/departments' },
     { name: 'Reports', icon: FileText, path: '/reports' },
+    { name: 'Add Followup', icon: PhoneCall, path: '/add-followup' },
+    { name: 'Call Report', icon: PhoneForwarded, path: '/call-report' },
     { name: 'Settings', icon: Settings, path: '/settings' },
   ];
 
