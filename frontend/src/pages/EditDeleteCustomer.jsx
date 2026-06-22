@@ -16,7 +16,7 @@ const EditDeleteCustomer = () => {
 
   const handleSearch = (e) => {
     e.preventDefault();
-    if (!searchQuery.trim()) return toast.error('Enter a name or mobile number');
+    if (!searchQuery.trim()) return toast.error('Enter an ID or mobile number');
     const results = searchCustomers(searchQuery);
     setSearchResults(results);
     if (results.length === 0) toast.error('No customers found');
@@ -73,7 +73,7 @@ const EditDeleteCustomer = () => {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
             <input
               type="text" value={searchQuery} onChange={e => { setSearchQuery(e.target.value); setSearchResults([]); }}
-              placeholder="Search by name or mobile number..."
+              placeholder="Search by ID or mobile number..."
               className="w-full pl-9 pr-3 py-2 text-sm bg-white border border-gray-300 shadow-sm rounded-md focus:ring-1 focus:ring-green-500 focus:border-green-500 transition-colors"
             />
             {/* Dropdown */}
@@ -111,7 +111,7 @@ const EditDeleteCustomer = () => {
             <Search className="w-8 h-8 text-green-400" />
           </div>
           <h3 className="text-base font-semibold text-gray-600 mb-1">Search for a Customer</h3>
-          <p className="text-sm text-gray-400 max-w-xs">Type a customer name or mobile number above and click Search to load their details.</p>
+          <p className="text-sm text-gray-400 max-w-xs">Type a customer ID or mobile number above and click Search to load their details.</p>
         </div>
       )}
 
@@ -230,18 +230,18 @@ const EditDeleteCustomer = () => {
                 ].map(({ label, key, ref, accept }) => (
                   <div key={key}>
                     <label className={lbl}>{label}</label>
-                    <div className="flex items-center gap-2">
-                      {key === 'proof2File' && (
-                        <input type="text" name="proof2Name" value={formData.proof2Name} onChange={handleInputChange}
-                          placeholder="Proof name" className={`${inp} !py-1 !text-xs w-24 shrink-0`} />
-                      )}
-                      <button type="button" onClick={() => ref.current.click()}
-                        className="flex items-center px-3 py-1.5 bg-gray-50 border border-gray-200 rounded-md text-xs font-medium text-gray-700 hover:bg-gray-100 shrink-0">
-                        <Upload className="w-3 h-3 mr-1" /> Browse
-                      </button>
-                      <span className="text-xs text-gray-500 truncate">{files[key] ? files[key].name : 'No file'}</span>
-                      <input type="file" ref={ref} onChange={e => handleFileChange(e, key)} className="hidden" accept={accept} />
-                    </div>
+                  <div className="flex items-center gap-2">
+                    {key === 'proof2File' && (
+                      <input type="text" name="proof2Name" value={formData.proof2Name} onChange={handleInputChange}
+                        placeholder="Proof name" className="w-28 px-2 py-1.5 text-xs bg-white border border-gray-300 shadow-sm rounded-md focus:ring-1 focus:ring-green-500 focus:border-green-500 transition-colors shrink-0 outline-none" />
+                    )}
+                    <button type="button" onClick={() => ref.current.click()}
+                      className="flex items-center px-3 py-1.5 bg-white border border-gray-300 shadow-sm rounded-md text-xs font-medium text-gray-700 hover:bg-gray-50 shrink-0 transition-colors">
+                      <Upload className="w-3 h-3 mr-1" /> Browse
+                    </button>
+                    <span className="text-xs text-gray-500 truncate">{files[key] ? files[key].name : 'No file'}</span>
+                    <input type="file" ref={ref} onChange={e => handleFileChange(e, key)} className="hidden" accept={accept} />
+                  </div>
                   </div>
                 ))}
               </div>
