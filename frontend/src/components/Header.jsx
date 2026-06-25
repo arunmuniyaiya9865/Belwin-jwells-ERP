@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import React, { useState, useRef, useEffect } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { LogOut, User } from 'lucide-react';
@@ -22,6 +23,14 @@ const Header = () => {
     navigate('/');
   };
   // Mobile menu states removed
+=======
+import React, { useState, useEffect, useRef } from 'react';
+import { NavLink, useLocation } from 'react-router-dom';
+import { LogOut } from 'lucide-react';
+
+const Header = () => {
+  const location = useLocation();
+>>>>>>> bc349fb706e4bcd8458de02e4c1318f493c3b4b6
 
   const menus = [
     {

@@ -8,7 +8,11 @@ const COMMON_CATEGORIES = [
 ];
 
 const EditIncome = () => {
+<<<<<<< HEAD
   const [searchId, setSearchId] = useState('');
+=======
+  const [incomes, setIncomes] = useState([]);
+>>>>>>> bc349fb706e4bcd8458de02e4c1318f493c3b4b6
   const [selectedIncomeId, setSelectedIncomeId] = useState('');
   
   const [formData, setFormData] = useState({
@@ -33,6 +37,7 @@ const EditIncome = () => {
 
   const [loading, setLoading] = useState(false);
 
+<<<<<<< HEAD
   const handleSearch = async () => {
     if (!searchId) {
       toast.error('Please enter an Income ID');
@@ -63,6 +68,38 @@ const EditIncome = () => {
       toast.error('Failed to search income');
     } finally {
       setLoading(false);
+=======
+  useEffect(() => {
+    fetchIncomes();
+  }, []);
+
+  const fetchIncomes = async () => {
+    try {
+      const response = await fetch('http://localhost:5000/api/incomes');
+      const data = await response.json();
+      if (data.success) {
+        setIncomes(data.data);
+      }
+    } catch (error) {
+      console.error('Error fetching incomes:', error);
+      toast.error('Failed to load incomes');
+    }
+  };
+
+  const handleIncomeSelect = (e) => {
+    const id = e.target.value;
+    setSelectedIncomeId(id);
+    if (id) {
+      const income = incomes.find(inc => inc._id === id);
+      if (income) {
+        setFormData({
+          ...income,
+          incomeDate: income.incomeDate ? income.incomeDate.split('T')[0] : ''
+        });
+      }
+    } else {
+      resetForm();
+>>>>>>> bc349fb706e4bcd8458de02e4c1318f493c3b4b6
     }
   };
 
@@ -90,7 +127,11 @@ const EditIncome = () => {
     
     setLoading(true);
     try {
+<<<<<<< HEAD
       const response = await fetch(`http://localhost:5000/api/incomes/${formData.incomeId}`, {
+=======
+      const response = await fetch(`http://localhost:5000/api/incomes/${formData._id}`, {
+>>>>>>> bc349fb706e4bcd8458de02e4c1318f493c3b4b6
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData),
@@ -100,6 +141,10 @@ const EditIncome = () => {
 
       if (response.ok) {
         toast.success('Income updated successfully!');
+<<<<<<< HEAD
+=======
+        fetchIncomes(); // Refresh list
+>>>>>>> bc349fb706e4bcd8458de02e4c1318f493c3b4b6
       } else {
         toast.error(data.message || 'Failed to update income');
       }
@@ -117,7 +162,11 @@ const EditIncome = () => {
 
     setLoading(true);
     try {
+<<<<<<< HEAD
       const response = await fetch(`http://localhost:5000/api/incomes/${formData.incomeId}`, {
+=======
+      const response = await fetch(`http://localhost:5000/api/incomes/${formData._id}`, {
+>>>>>>> bc349fb706e4bcd8458de02e4c1318f493c3b4b6
         method: 'DELETE',
       });
 
@@ -126,7 +175,11 @@ const EditIncome = () => {
       if (response.ok) {
         toast.success('Income deleted successfully!');
         resetForm();
+<<<<<<< HEAD
         setSearchId('');
+=======
+        fetchIncomes(); // Refresh list
+>>>>>>> bc349fb706e4bcd8458de02e4c1318f493c3b4b6
       } else {
         toast.error(data.message || 'Failed to delete income');
       }
@@ -146,6 +199,7 @@ const EditIncome = () => {
 
       <div className="bg-white border border-gray-100 rounded-lg shadow-sm flex-1 flex flex-col overflow-hidden">
         <div className="p-4 border-b border-gray-100 bg-gray-50 shrink-0">
+<<<<<<< HEAD
           <label className="block text-sm font-medium text-gray-700 mb-1">Enter Income ID to Edit</label>
           <div className="flex gap-4 md:w-1/2">
             <input 
@@ -164,6 +218,21 @@ const EditIncome = () => {
               Search
             </button>
           </div>
+=======
+          <label className="block text-sm font-medium text-gray-700 mb-1">Select Income to Edit</label>
+          <select 
+            value={selectedIncomeId} 
+            onChange={handleIncomeSelect}
+            className="w-full md:w-1/2 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-erp-green bg-white"
+          >
+            <option value="">-- Select Income (ID / From) --</option>
+            {incomes.map(inc => (
+              <option key={inc._id} value={inc._id}>
+                {inc.incomeId} - {inc.receivedFrom} (₹{inc.amount}) - {inc.incomeDate ? inc.incomeDate.split('T')[0] : ''}
+              </option>
+            ))}
+          </select>
+>>>>>>> bc349fb706e4bcd8458de02e4c1318f493c3b4b6
         </div>
 
         <div className="p-4 flex-1 overflow-auto">
@@ -175,7 +244,11 @@ const EditIncome = () => {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Income ID / Voucher No <span className="text-red-500">*</span></label>
+<<<<<<< HEAD
                   <input required type="text" name="incomeId" value={formData.incomeId} readOnly className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-erp-green bg-gray-100" />
+=======
+                  <input required type="text" name="incomeId" value={formData.incomeId} onChange={handleChange} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-erp-green" />
+>>>>>>> bc349fb706e4bcd8458de02e4c1318f493c3b4b6
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Income Date <span className="text-red-500">*</span></label>

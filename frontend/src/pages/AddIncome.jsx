@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 import React, { useState, useEffect } from 'react';
+=======
+import React, { useState } from 'react';
+>>>>>>> bc349fb706e4bcd8458de02e4c1318f493c3b4b6
 import toast from 'react-hot-toast';
 
 const COMMON_CATEGORIES = [
@@ -29,6 +33,7 @@ const AddIncome = () => {
 
   const [loading, setLoading] = useState(false);
 
+<<<<<<< HEAD
   useEffect(() => {
     fetchNextId();
   }, []);
@@ -45,6 +50,8 @@ const AddIncome = () => {
     }
   };
 
+=======
+>>>>>>> bc349fb706e4bcd8458de02e4c1318f493c3b4b6
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
     setFormData(prev => ({
@@ -89,7 +96,10 @@ const AddIncome = () => {
           gstIncluded: false,
           taxAmount: ''
         });
+<<<<<<< HEAD
         fetchNextId(); // Fetch next ID automatically after save
+=======
+>>>>>>> bc349fb706e4bcd8458de02e4c1318f493c3b4b6
       } else {
         toast.error(data.message || 'Failed to add income');
       }

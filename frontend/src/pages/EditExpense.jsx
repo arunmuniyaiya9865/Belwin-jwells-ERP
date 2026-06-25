@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
+<<<<<<< HEAD
 import { FileText, Image as ImageIcon, ExternalLink } from 'lucide-react';
+=======
+>>>>>>> bc349fb706e4bcd8458de02e4c1318f493c3b4b6
 
 const COMMON_CATEGORIES = [
   'Office Rent', 'EB / Current Bill', 'Staff Salary', 'Internet / Phone Bill',
@@ -10,7 +13,11 @@ const COMMON_CATEGORIES = [
 ];
 
 const EditExpense = () => {
+<<<<<<< HEAD
   const [searchId, setSearchId] = useState('');
+=======
+  const [expenses, setExpenses] = useState([]);
+>>>>>>> bc349fb706e4bcd8458de02e4c1318f493c3b4b6
   const [selectedExpenseId, setSelectedExpenseId] = useState('');
   
   const [formData, setFormData] = useState({
@@ -33,6 +40,7 @@ const EditExpense = () => {
     paymentReferenceNo: ''
   });
 
+<<<<<<< HEAD
   const [expenseImage, setExpenseImage] = useState(null);
   const [previewUrl, setPreviewUrl] = useState(null);
   const [existingImageUrl, setExistingImageUrl] = useState(null);
@@ -72,6 +80,40 @@ const EditExpense = () => {
       toast.error('Failed to search expense');
     } finally {
       setLoading(false);
+=======
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    fetchExpenses();
+  }, []);
+
+  const fetchExpenses = async () => {
+    try {
+      const response = await fetch('http://localhost:5000/api/expenses');
+      const data = await response.json();
+      if (data.success) {
+        setExpenses(data.data);
+      }
+    } catch (error) {
+      console.error('Error fetching expenses:', error);
+      toast.error('Failed to load expenses');
+    }
+  };
+
+  const handleExpenseSelect = (e) => {
+    const id = e.target.value;
+    setSelectedExpenseId(id);
+    if (id) {
+      const expense = expenses.find(exp => exp._id === id);
+      if (expense) {
+        setFormData({
+          ...expense,
+          expenseDate: expense.expenseDate ? expense.expenseDate.split('T')[0] : ''
+        });
+      }
+    } else {
+      resetForm();
+>>>>>>> bc349fb706e4bcd8458de02e4c1318f493c3b4b6
     }
   };
 
@@ -91,6 +133,7 @@ const EditExpense = () => {
       enteredBy: '', gstIncluded: false, taxAmount: '', paymentReferenceNo: ''
     });
     setSelectedExpenseId('');
+<<<<<<< HEAD
     setExpenseImage(null);
     setPreviewUrl(null);
     setExistingImageUrl(null);
@@ -109,6 +152,8 @@ const EditExpense = () => {
       setExpenseImage(null);
       setPreviewUrl(null);
     }
+=======
+>>>>>>> bc349fb706e4bcd8458de02e4c1318f493c3b4b6
   };
 
   const handleUpdate = async (e) => {
@@ -117,6 +162,7 @@ const EditExpense = () => {
     
     setLoading(true);
     try {
+<<<<<<< HEAD
       const formDataToSend = new FormData();
       Object.keys(formData).forEach(key => {
         formDataToSend.append(key, formData[key]);
@@ -128,12 +174,22 @@ const EditExpense = () => {
       const response = await fetch(`http://localhost:5000/api/expenses/${formData.expenseId}`, {
         method: 'PUT',
         body: formDataToSend,
+=======
+      const response = await fetch(`http://localhost:5000/api/expenses/${formData._id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData),
+>>>>>>> bc349fb706e4bcd8458de02e4c1318f493c3b4b6
       });
 
       const data = await response.json();
 
       if (response.ok) {
         toast.success('Expense updated successfully!');
+<<<<<<< HEAD
+=======
+        fetchExpenses(); // Refresh list
+>>>>>>> bc349fb706e4bcd8458de02e4c1318f493c3b4b6
       } else {
         toast.error(data.message || 'Failed to update expense');
       }
@@ -151,7 +207,11 @@ const EditExpense = () => {
 
     setLoading(true);
     try {
+<<<<<<< HEAD
       const response = await fetch(`http://localhost:5000/api/expenses/${formData.expenseId}`, {
+=======
+      const response = await fetch(`http://localhost:5000/api/expenses/${formData._id}`, {
+>>>>>>> bc349fb706e4bcd8458de02e4c1318f493c3b4b6
         method: 'DELETE',
       });
 
@@ -160,7 +220,11 @@ const EditExpense = () => {
       if (response.ok) {
         toast.success('Expense deleted successfully!');
         resetForm();
+<<<<<<< HEAD
         setSearchId('');
+=======
+        fetchExpenses(); // Refresh list
+>>>>>>> bc349fb706e4bcd8458de02e4c1318f493c3b4b6
       } else {
         toast.error(data.message || 'Failed to delete expense');
       }
@@ -180,6 +244,7 @@ const EditExpense = () => {
 
       <div className="bg-white border border-gray-100 rounded-lg shadow-sm flex-1 flex flex-col overflow-hidden">
         <div className="p-4 border-b border-gray-100 bg-gray-50 shrink-0">
+<<<<<<< HEAD
           <label className="block text-sm font-medium text-gray-700 mb-1">Enter Expense ID to Edit</label>
           <div className="flex gap-4 md:w-1/2">
             <input 
@@ -198,6 +263,21 @@ const EditExpense = () => {
               Search
             </button>
           </div>
+=======
+          <label className="block text-sm font-medium text-gray-700 mb-1">Select Expense to Edit</label>
+          <select 
+            value={selectedExpenseId} 
+            onChange={handleExpenseSelect}
+            className="w-full md:w-1/2 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-erp-green bg-white"
+          >
+            <option value="">-- Select Expense (ID / Vendor) --</option>
+            {expenses.map(exp => (
+              <option key={exp._id} value={exp._id}>
+                {exp.expenseId} - {exp.paidToVendorName} (₹{exp.expenseAmount}) - {exp.expenseDate ? exp.expenseDate.split('T')[0] : ''}
+              </option>
+            ))}
+          </select>
+>>>>>>> bc349fb706e4bcd8458de02e4c1318f493c3b4b6
         </div>
 
         <div className="p-4 flex-1 overflow-auto">
@@ -209,7 +289,11 @@ const EditExpense = () => {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Expense ID / Voucher No <span className="text-red-500">*</span></label>
+<<<<<<< HEAD
                   <input required type="text" name="expenseId" value={formData.expenseId} readOnly className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-erp-green bg-gray-100" />
+=======
+                  <input required type="text" name="expenseId" value={formData.expenseId} onChange={handleChange} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-erp-green" />
+>>>>>>> bc349fb706e4bcd8458de02e4c1318f493c3b4b6
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Expense Date <span className="text-red-500">*</span></label>
@@ -269,6 +353,7 @@ const EditExpense = () => {
                   <input type="text" name="billInvoiceNo" value={formData.billInvoiceNo} onChange={handleChange} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-erp-green" />
                 </div>
                 <div>
+<<<<<<< HEAD
                   <label className="block text-sm font-medium text-gray-700 mb-1">Bill / Invoice Upload</label>
                   {existingImageUrl && !previewUrl && (
                     <div className="mb-2">
@@ -298,6 +383,10 @@ const EditExpense = () => {
                       )}
                     </div>
                   )}
+=======
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Bill Upload (URL/Path)</label>
+                  <input type="text" name="billReceiptUpload" value={formData.billReceiptUpload} onChange={handleChange} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-erp-green" />
+>>>>>>> bc349fb706e4bcd8458de02e4c1318f493c3b4b6
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Payment Reference No</label>

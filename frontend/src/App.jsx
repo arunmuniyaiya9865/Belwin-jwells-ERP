@@ -24,12 +24,16 @@ import EditIncome from './pages/EditIncome';
 import IncomeReport from './pages/IncomeReport';
 import AddDenomination from './pages/AddDenomination';
 import AddFollowup from './pages/AddFollowup';
+<<<<<<< HEAD
 import AddRemittance from './pages/AddRemittance';
 import RemittanceHistory from './pages/RemittanceHistory';
 import CallReport from './pages/CallReport';
 import SendGoldRequest from './pages/SendGoldRequest';
 import GoldStockReport from './pages/GoldStockReport';
 import Schemes from './pages/Schemes';
+=======
+import CallReport from './pages/CallReport';
+>>>>>>> bc349fb706e4bcd8458de02e4c1318f493c3b4b6
 
 function App() {
   return (
@@ -50,7 +54,11 @@ function App() {
             <Route path="/top-up-loan" element={<TopUpLoan />} />
             <Route path="/receive-payment" element={<ReceivePayment />} />
             <Route path="/payment-history" element={<PaymentHistory />} />
+<<<<<<< HEAD
 
+=======
+            
+>>>>>>> bc349fb706e4bcd8458de02e4c1318f493c3b4b6
             {/* Reports */}
             <Route path="/daily-summary-report" element={<ReportsDashboard />} />
             <Route path="/today-collection-report" element={<ReportsDashboard />} />
@@ -69,12 +77,16 @@ function App() {
             <Route path="/add-expense" element={<AddExpense />} />
             <Route path="/edit-expense" element={<EditExpense />} />
             <Route path="/expense-report" element={<ExpenseReport />} />
+<<<<<<< HEAD
 
             {/* income */}
+=======
+>>>>>>> bc349fb706e4bcd8458de02e4c1318f493c3b4b6
             <Route path="/add-income" element={<AddIncome />} />
             <Route path="/edit-income" element={<EditIncome />} />
             <Route path="/income-report" element={<IncomeReport />} />
             <Route path="/add-denomination" element={<AddDenomination />} />
+<<<<<<< HEAD
 
             {/* Customer call */}
             <Route path="/call-log" element={<AddFollowup />} />
@@ -92,6 +104,12 @@ function App() {
             <Route path="/schemes" element={<Schemes />} />
 
             {/* Other routes will go here */}
+=======
+            {/* Customer Calls */}
+            <Route path="/add-followup" element={<AddFollowup />} />
+            <Route path="/call-report" element={<CallReport />} />
+            {/* Add other routes here later */}
+>>>>>>> bc349fb706e4bcd8458de02e4c1318f493c3b4b6
           </Routes>
         </main>
         <Footer />

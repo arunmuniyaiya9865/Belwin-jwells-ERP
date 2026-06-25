@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+<<<<<<< HEAD
 import { Search, Filter, Download, Printer, Eye, Calendar, User, FileText, MapPin, BadgeDollarSign, X } from 'lucide-react';
 import { getPaymentHistory, getAllPayments } from '../services/paymentService';
 import toast, { Toaster } from 'react-hot-toast';
@@ -7,6 +8,13 @@ const PaymentHistory = () => {
   // --- Global Ledger State ---
   const [payments, setPayments] = useState([]);
   const [isLoadingAll, setIsLoadingAll] = useState(true);
+=======
+import { Search, Filter, Download, Printer, Eye, Calendar, User, FileText, MapPin, BadgeDollarSign } from 'lucide-react';
+import { getAllPayments } from '../utils/paymentStore';
+
+const PaymentHistory = () => {
+  const [payments, setPayments] = useState([]);
+>>>>>>> bc349fb706e4bcd8458de02e4c1318f493c3b4b6
   const [filters, setFilters] = useState({
     dateWise: '',
     customerWise: '',
@@ -15,6 +23,7 @@ const PaymentHistory = () => {
     employeeWise: ''
   });
 
+<<<<<<< HEAD
   // --- Loan ID Search State ---
   const [searchLoanId, setSearchLoanId] = useState('');
   const [isSearching, setIsSearching] = useState(false);
@@ -36,11 +45,33 @@ const PaymentHistory = () => {
     };
     fetchAll();
   }, []);
+=======
+  useEffect(() => {
+    // Basic filter logic
+    let data = getAllPayments();
+    
+    if (filters.dateWise) {
+      data = data.filter(p => p.paymentDate === filters.dateWise);
+    }
+    if (filters.customerWise) {
+      data = data.filter(p => p.customerName?.toLowerCase().includes(filters.customerWise.toLowerCase()));
+    }
+    if (filters.loanWise) {
+      data = data.filter(p => p.loanNumber?.toLowerCase().includes(filters.loanWise.toLowerCase()));
+    }
+    if (filters.employeeWise) {
+      data = data.filter(p => p.collectedBy?.toLowerCase().includes(filters.employeeWise.toLowerCase()));
+    }
+
+    setPayments(data);
+  }, [filters]);
+>>>>>>> bc349fb706e4bcd8458de02e4c1318f493c3b4b6
 
   const handleFilterChange = (e) => {
     setFilters({ ...filters, [e.target.name]: e.target.value });
   };
 
+<<<<<<< HEAD
   // --- Loan search handler ---
   const handleSearchLoan = async () => {
     if (!searchLoanId.trim()) {
@@ -78,10 +109,13 @@ const PaymentHistory = () => {
         return true;
       });
 
+=======
+>>>>>>> bc349fb706e4bcd8458de02e4c1318f493c3b4b6
   const inp = "w-full pl-9 pr-3 py-2 text-sm bg-white border border-gray-300 rounded-md focus:ring-1 focus:ring-green-500 transition-colors";
 
   return (
     <div className="flex flex-col h-full">
+<<<<<<< HEAD
       <Toaster position="top-right" />
 
       {/* Title & Actions */}
@@ -89,6 +123,13 @@ const PaymentHistory = () => {
         <div>
           <h2 className="text-2xl font-bold text-text-primary">Payment History</h2>
           <p className="text-sm text-text-secondary mt-1">View all received customer payments. Payments are immutable after creation.</p>
+=======
+      {/* Title & Actions */}
+      <div className="mb-6 shrink-0 flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-bold text-text-primary">Payment History</h2>
+          <p className="text-sm text-text-secondary mt-1">View and manage all received customer payments.</p>
+>>>>>>> bc349fb706e4bcd8458de02e4c1318f493c3b4b6
         </div>
         <div className="flex gap-3">
           <button className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-bold text-gray-700 hover:bg-gray-50 shadow-sm transition-all">
@@ -100,6 +141,7 @@ const PaymentHistory = () => {
         </div>
       </div>
 
+<<<<<<< HEAD
       {/* ── Loan ID Search Section ── */}
       <div className="mb-4 bg-white border border-gray-200 rounded-xl shadow-sm p-4 shrink-0">
         <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3 flex items-center gap-1.5">
@@ -205,6 +247,36 @@ const PaymentHistory = () => {
             &mdash; {loanSummary.payments.length} record(s)
           </div>
         )}
+=======
+      <div className="flex-1 bg-white border border-gray-200 rounded-xl shadow-sm flex flex-col overflow-hidden">
+        
+        {/* Filters */}
+        <div className="p-4 border-b border-gray-200 bg-gray-50/50 grid grid-cols-5 gap-4">
+          <div className="relative">
+            <Calendar className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" />
+            <input type="date" name="dateWise" value={filters.dateWise} onChange={handleFilterChange} className={inp} />
+          </div>
+          <div className="relative">
+            <User className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" />
+            <input type="text" name="customerWise" value={filters.customerWise} onChange={handleFilterChange} placeholder="Customer Name..." className={inp} />
+          </div>
+          <div className="relative">
+            <FileText className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" />
+            <input type="text" name="loanWise" value={filters.loanWise} onChange={handleFilterChange} placeholder="Loan Number..." className={inp} />
+          </div>
+          <div className="relative">
+            <MapPin className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" />
+            <select name="branchWise" value={filters.branchWise} onChange={handleFilterChange} className={inp}>
+              <option value="">All Branches</option>
+              <option value="Main">Main Branch</option>
+            </select>
+          </div>
+          <div className="relative">
+            <BadgeDollarSign className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" />
+            <input type="text" name="employeeWise" value={filters.employeeWise} onChange={handleFilterChange} placeholder="Employee/Collected By..." className={inp} />
+          </div>
+        </div>
+>>>>>>> bc349fb706e4bcd8458de02e4c1318f493c3b4b6
 
         {/* Table */}
         <div className="flex-1 overflow-auto">
@@ -220,6 +292,7 @@ const PaymentHistory = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
+<<<<<<< HEAD
               {isLoadingAll && !loanSummary ? (
                 <tr>
                   <td colSpan="6" className="px-6 py-12 text-center text-sm text-gray-400">
@@ -262,6 +335,36 @@ const PaymentHistory = () => {
                     <td className="px-6 py-4">
                       <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-blue-50 text-blue-700 border border-blue-200">
                         {p.paymentMode || 'Cash'}
+=======
+              {payments.length === 0 ? (
+                <tr>
+                  <td colSpan="6" className="px-6 py-12 text-center text-sm text-gray-500">
+                    No payment records found matching the criteria.
+                  </td>
+                </tr>
+              ) : (
+                payments.map((p, i) => (
+                  <tr key={i} className="hover:bg-gray-50 transition-colors">
+                    <td className="px-6 py-4">
+                      <div className="text-sm font-bold text-gray-800">{p.paymentDate}</div>
+                      <div className="text-xs text-gray-500 font-mono mt-0.5">{p.receiptNo}</div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="text-sm font-bold text-gray-800">{p.customerName}</div>
+                      <div className="text-xs font-mono text-gray-500 mt-0.5">Loan: <span className="font-semibold text-green-700">{p.loanNumber}</span> | Ph: {p.mobileNumber}</div>
+                    </td>
+                    <td className="px-6 py-4 text-right">
+                      <div className="text-sm font-bold text-gray-900">₹{parseFloat(p.amountReceived||0).toLocaleString('en-IN')}</div>
+                      <div className="text-[10px] text-gray-400 mt-0.5 uppercase tracking-wider">{p.paymentType}</div>
+                    </td>
+                    <td className="px-6 py-4 text-right">
+                      <div className="text-sm text-gray-600">₹{parseFloat(p.interestAmount||0).toLocaleString('en-IN')} / ₹{parseFloat(p.principalAmount||0).toLocaleString('en-IN')}</div>
+                      {p.penaltyAmount > 0 && <div className="text-[10px] text-red-500 mt-0.5">+₹{p.penaltyAmount} Penalty</div>}
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-blue-50 text-blue-700 border border-blue-200">
+                        {p.paymentMode}
+>>>>>>> bc349fb706e4bcd8458de02e4c1318f493c3b4b6
                       </span>
                     </td>
                     <td className="px-6 py-4">
@@ -280,6 +383,7 @@ const PaymentHistory = () => {
             </tbody>
           </table>
         </div>
+<<<<<<< HEAD
 
         {/* Footer */}
         <div className="p-4 border-t border-gray-200 bg-gray-50 text-sm text-gray-500 flex justify-between">
@@ -291,6 +395,15 @@ const PaymentHistory = () => {
             Total: ₹{activePayments.reduce((acc, p) => acc + parseFloat(p.paymentAmount || 0), 0).toLocaleString('en-IN')}
           </span>
         </div>
+=======
+        
+        {/* Footer */}
+        <div className="p-4 border-t border-gray-200 bg-gray-50 text-sm text-gray-500 flex justify-between">
+          <span>Showing {payments.length} records</span>
+          <span className="font-bold text-gray-700">Total Displayed: ₹{payments.reduce((acc, p) => acc + parseFloat(p.amountReceived||0), 0).toLocaleString('en-IN')}</span>
+        </div>
+
+>>>>>>> bc349fb706e4bcd8458de02e4c1318f493c3b4b6
       </div>
     </div>
   );

@@ -1,5 +1,9 @@
 import { NavLink } from 'react-router-dom';
+<<<<<<< HEAD
 import { LayoutDashboard, Users, UserCheck, CalendarOff, IndianRupee, Building2, FileText, Settings, LogOut, PhoneCall, PhoneForwarded, Send, History, Coins, Box } from 'lucide-react';
+=======
+import { LayoutDashboard, Users, UserCheck, CalendarOff, IndianRupee, Building2, FileText, Settings, LogOut, PhoneCall, PhoneForwarded } from 'lucide-react';
+>>>>>>> bc349fb706e4bcd8458de02e4c1318f493c3b4b6
 
 const Sidebar = () => {
   const menuItems = [
@@ -12,10 +16,13 @@ const Sidebar = () => {
     { name: 'Reports', icon: FileText, path: '/reports' },
     { name: 'Add Followup', icon: PhoneCall, path: '/add-followup' },
     { name: 'Call Report', icon: PhoneForwarded, path: '/call-report' },
+<<<<<<< HEAD
     { name: 'New Remittance', icon: Send, path: '/add-remittance' },
     { name: 'Remittance History', icon: History, path: '/remittance-history' },
     { name: 'Send Gold Request', icon: Coins, path: '/send-gold-request' },
     { name: 'Gold Stock Report', icon: Box, path: '/gold-stock-report' },
+=======
+>>>>>>> bc349fb706e4bcd8458de02e4c1318f493c3b4b6
     { name: 'Settings', icon: Settings, path: '/settings' },
   ];
 
