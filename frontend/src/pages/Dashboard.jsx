@@ -87,8 +87,8 @@ const Dashboard = () => {
               </div>
             </div>
           </div>
-          <div className="h-[300px] w-full">
-            <ResponsiveContainer width="100%" height="100%">
+          <div style={{ height: 300, width: '100%', minHeight: 300 }}>
+            <ResponsiveContainer width="100%" height="100%" minWidth={1}>
               <LineChart data={attendanceData} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" vertical={false} />
                 <XAxis dataKey="name" stroke="#9ca3af" axisLine={false} tickLine={false} dy={10} />
@@ -108,8 +108,8 @@ const Dashboard = () => {
         <div className="p-6 bg-erp-card border border-erp-green-dark rounded-xl">
           <h3 className="text-lg font-bold text-text-primary mb-2">Department Distribution</h3>
           <p className="text-sm text-text-secondary mb-6">Employee count by department</p>
-          <div className="h-[250px] w-full relative">
-            <ResponsiveContainer width="100%" height="100%">
+          <div style={{ height: 250, width: '100%', minHeight: 250, position: 'relative' }}>
+            <ResponsiveContainer width="100%" height="100%" minWidth={1}>
               <PieChart>
                 <Pie
                   data={departmentData}
