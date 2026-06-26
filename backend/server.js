@@ -25,7 +25,6 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 // Routes
 const authRoutes     = require('./routes/authRoutes');
 const employeeRoutes = require('./routes/employeeRoutes');
-<<<<<<< HEAD
 const customerRoutes = require('./routes/customerRoutes');
 const customerHistoryRoutes = require('./routes/customerHistoryRoutes');
 const customerApprovalRoutes = require('./routes/customerApprovalRoutes');
@@ -34,23 +33,19 @@ const paymentRoutes = require('./routes/paymentRoutes');
 const repledgeRoutes = require('./routes/repledgeRoutes');
 const topupRoutes = require('./routes/topupRoutes');
 const reportRoutes = require('./routes/reportRoutes');
-=======
->>>>>>> bc349fb706e4bcd8458de02e4c1318f493c3b4b6
 const expenseRoutes = require('./routes/expenseRoutes');
 const incomeRoutes = require('./routes/incomeRoutes');
 const denominationRoutes = require('./routes/denominationRoutes');
 const followupRoutes = require('./routes/followupRoutes');
-<<<<<<< HEAD
 const remittanceRoutes = require('./routes/remittanceRoutes');
 const goldStockRoutes = require('./routes/goldStockRoutes');
 const goldRequestRoutes = require('./routes/goldRequestRoutes');
 const callLogRoutes = require('./routes/callLogRoutes');
-=======
->>>>>>> bc349fb706e4bcd8458de02e4c1318f493c3b4b6
+const goldSchemeRoutes = require('./routes/goldSchemeRoutes');
+const provideLoanRoutes = require('./routes/provideLoanRoutes');
 
 app.use('/api/auth',      authRoutes);
 app.use('/api/employees', employeeRoutes);
-<<<<<<< HEAD
 app.use('/api/customers', customerRoutes);
 app.use('/api/customer-history', customerHistoryRoutes);
 app.use('/api/customer-approval', customerApprovalRoutes);
@@ -59,19 +54,16 @@ app.use('/api/payments', paymentRoutes);
 app.use('/api/repledges', repledgeRoutes);
 app.use('/api/topups', topupRoutes);
 app.use('/api/reports', reportRoutes);
-=======
->>>>>>> bc349fb706e4bcd8458de02e4c1318f493c3b4b6
 app.use('/api/expenses', expenseRoutes);
 app.use('/api/incomes', incomeRoutes);
 app.use('/api/denominations', denominationRoutes);
 app.use('/api/followups', followupRoutes);
-<<<<<<< HEAD
 app.use('/api/remittances', remittanceRoutes);
 app.use('/api/gold-stocks', goldStockRoutes);
 app.use('/api/gold-requests', goldRequestRoutes);
 app.use('/api/calls', callLogRoutes);
-=======
->>>>>>> bc349fb706e4bcd8458de02e4c1318f493c3b4b6
+app.use('/api/gold-schemes', goldSchemeRoutes);
+app.use('/api/provide-loan', provideLoanRoutes);
 
 app.get('/api/health', (req, res) => {
     res.status(200).json({ status: 'ok', message: 'API is running' });

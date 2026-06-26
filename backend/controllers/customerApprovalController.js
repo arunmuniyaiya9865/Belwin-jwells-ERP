@@ -7,10 +7,10 @@ const customerApprovalService = require('../services/customerApprovalService');
  */
 const searchCustomer = async (req, res) => {
     try {
-        const { customerId, branchId } = req.query;
+        const { customerId } = req.query;
         const user = req.user; // Provided by auth middleware or guestUser
 
-        const data = await customerApprovalService.findCustomerForApproval(customerId, branchId, user);
+        const data = await customerApprovalService.findCustomerForApproval(customerId, user);
         
         res.json(data);
     } catch (error) {
@@ -41,8 +41,6 @@ const getDebugInfo = async (req, res) => {
             searchedId: customerId,
             foundCustomer: !!customer,
             actualDatabaseCustomerId: customer?.customerId || null,
-            customerBranch: customer?.branchId || null,
-            userBranch: req.query.branchId || 'Not Provided',
             userRole: user.role
         });
     } catch (error) {

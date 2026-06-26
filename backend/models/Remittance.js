@@ -11,7 +11,6 @@ const RemittanceCounter = mongoose.model('RemittanceCounter', remittanceCounterS
 const remittanceSchema = new mongoose.Schema({
     remittanceNo: { type: String, unique: true, index: true },
     date: { type: Date, required: true },
-    branchName: { type: String, required: true, trim: true },
     remittanceType: { type: String, required: true, trim: true },
     amount: { 
         type: Number, 

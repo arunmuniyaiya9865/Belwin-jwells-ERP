@@ -1,6 +1,9 @@
 const express = require('express');
 const router = express.Router();
-const { getDailySummary, getLoanReport, getLoanOutstandingReport, getInterestPendingReport, getClosedAccountsReport, getRepledgeReport, getAccountSummaryReport, getTodayCollectionReport, getDatewisePendingReport, getCashAssetsReport, getAuctionAccountsReport, getBusinessReport } = require('../controllers/reportController');
+const { getDailySummary, getLoanReport, getLoanOutstandingReport, getInterestPendingReport, getClosedAccountsReport, getRepledgeReport, getAccountSummaryReport, getTodayCollectionReport, getDatewisePendingReport, getCashAssetsReport, getAuctionAccountsReport, getBusinessReport, getDailyClosingSummary } = require('../controllers/reportController');
+
+// GET /api/reports/daily-closing-summary
+router.get('/daily-closing-summary', getDailyClosingSummary);
 
 // GET /api/reports/daily-summary
 router.get('/daily-summary', getDailySummary);

@@ -1,9 +1,7 @@
-<<<<<<< HEAD
-import React, { useState, useEffect } from 'react';
-=======
 import React, { useState } from 'react';
->>>>>>> bc349fb706e4bcd8458de02e4c1318f493c3b4b6
 import toast from 'react-hot-toast';
+import { Download } from 'lucide-react';
+import { exportToExcel, exportToPDF } from '../utils/exportUtils';
 
 const COMMON_CATEGORIES = [
   'Loan Interest Income', 'Processing Fee', 'Penalty Collection', 'Scheme Joining Fee',
@@ -15,7 +13,7 @@ const AddIncome = () => {
   const [formData, setFormData] = useState({
     incomeId: '',
     incomeDate: new Date().toISOString().split('T')[0],
-    branchName: '',
+
     incomeCategory: '',
     incomeSubCategory: '',
     amount: '',
@@ -33,25 +31,6 @@ const AddIncome = () => {
 
   const [loading, setLoading] = useState(false);
 
-<<<<<<< HEAD
-  useEffect(() => {
-    fetchNextId();
-  }, []);
-
-  const fetchNextId = async () => {
-    try {
-      const response = await fetch('http://localhost:5000/api/incomes/next-id');
-      const data = await response.json();
-      if (data.nextId) {
-        setFormData(prev => ({ ...prev, incomeId: data.nextId }));
-      }
-    } catch (error) {
-      console.error('Error fetching next Income ID:', error);
-    }
-  };
-
-=======
->>>>>>> bc349fb706e4bcd8458de02e4c1318f493c3b4b6
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
     setFormData(prev => ({
@@ -81,7 +60,7 @@ const AddIncome = () => {
         setFormData({
           incomeId: '',
           incomeDate: new Date().toISOString().split('T')[0],
-          branchName: '',
+
           incomeCategory: '',
           incomeSubCategory: '',
           amount: '',
@@ -96,10 +75,6 @@ const AddIncome = () => {
           gstIncluded: false,
           taxAmount: ''
         });
-<<<<<<< HEAD
-        fetchNextId(); // Fetch next ID automatically after save
-=======
->>>>>>> bc349fb706e4bcd8458de02e4c1318f493c3b4b6
       } else {
         toast.error(data.message || 'Failed to add income');
       }
@@ -111,19 +86,55 @@ const AddIncome = () => {
     }
   };
 
+  const handleExportPDF = async () => {
+    try {
+      const res = await fetch('http://localhost:5000/api/incomes');
+      const data = await res.json();
+      if(data.success) {
+        const headers = ['Date', 'ID', 'Category', 'Received From', 'Amount', 'Mode'];
+        const mapper = (i) => [i.incomeDate ? new Date(i.incomeDate).toLocaleDateString() : '', i.incomeId, i.incomeCategory, i.receivedFrom, i.amount, i.paymentMode];
+        exportToPDF(data.data, headers, mapper, 'Income Report', `Income_List_${new Date().toISOString().split('T')[0]}`);
+      }
+    } catch(err) {
+      toast.error('Failed to export PDF');
+    }
+  };
+
+  const handleExportExcel = async () => {
+    try {
+      const res = await fetch('http://localhost:5000/api/incomes');
+      const data = await res.json();
+      if(data.success) {
+        const headers = ['Date', 'ID', 'Category', 'Received From', 'Amount', 'Mode'];
+        const mapper = (i) => [i.incomeDate ? new Date(i.incomeDate).toLocaleDateString() : '', i.incomeId, i.incomeCategory, i.receivedFrom, i.amount, i.paymentMode];
+        exportToExcel(data.data, headers, mapper, `Income_List_${new Date().toISOString().split('T')[0]}`);
+      }
+    } catch(err) {
+      toast.error('Failed to export Excel');
+    }
+  };
+
   return (
-    <div className="flex flex-col" style={{ height: 'calc(100vh - 100px)' }}>
-      <div className="mb-3 shrink-0">
+    <div className="flex flex-col">
+      <div className="mb-3 shrink-0 flex justify-between items-center">
         <h2 className="text-2xl font-bold text-text-primary">Add New Income</h2>
+        <div className="flex gap-3">
+          <button onClick={handleExportExcel} className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-bold text-gray-700 hover:bg-gray-50 shadow-sm transition-all">
+            <Download className="w-4 h-4" /> Export Excel
+          </button>
+          <button onClick={handleExportPDF} className="flex items-center gap-2 px-4 py-2 bg-red-50 border border-red-200 rounded-lg text-sm font-bold text-red-700 hover:bg-red-100 shadow-sm transition-all">
+            <Download className="w-4 h-4" /> Export PDF
+          </button>
+        </div>
       </div>
 
-      <div className="bg-white border border-gray-100 rounded-lg shadow-sm flex-1 flex flex-col overflow-hidden">
-        <div className="p-4 flex-1 overflow-auto">
+      <div className="bg-white border border-gray-100 rounded-lg shadow-sm flex-1 flex flex-col">
+        <div className="p-4 flex-1">
           <form id="add-income-form" onSubmit={handleSubmit} className="space-y-8">
             {/* Basic Details Section */}
             <div>
               <h3 className="text-lg font-semibold text-gray-800 mb-4 pb-2 border-b">Basic Details</h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="grid grid-cols-3 gap-6">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Income ID / Voucher No <span className="text-red-500">*</span></label>
                   <input required type="text" name="incomeId" value={formData.incomeId} onChange={handleChange} placeholder="e.g., INC-001" className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-erp-green" />
@@ -132,10 +143,7 @@ const AddIncome = () => {
                   <label className="block text-sm font-medium text-gray-700 mb-1">Income Date <span className="text-red-500">*</span></label>
                   <input required type="date" name="incomeDate" value={formData.incomeDate} onChange={handleChange} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-erp-green" />
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Branch Name <span className="text-red-500">*</span></label>
-                  <input required type="text" name="branchName" value={formData.branchName} onChange={handleChange} placeholder="Main Branch" className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-erp-green" />
-                </div>
+
                 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Income Category <span className="text-red-500">*</span></label>
@@ -170,7 +178,7 @@ const AddIncome = () => {
                   <label className="block text-sm font-medium text-gray-700 mb-1">Received From <span className="text-red-500">*</span></label>
                   <input required type="text" name="receivedFrom" value={formData.receivedFrom} onChange={handleChange} placeholder="Name/Company" className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-erp-green" />
                 </div>
-                <div className="md:col-span-3">
+                <div className="col-span-3">
                   <label className="block text-sm font-medium text-gray-700 mb-1">Description / Remarks</label>
                   <textarea name="description" value={formData.description} onChange={handleChange} rows="2" placeholder="Any additional details..." className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-erp-green"></textarea>
                 </div>
@@ -180,7 +188,7 @@ const AddIncome = () => {
             {/* Extra Details Section */}
             <div>
               <h3 className="text-lg font-semibold text-gray-800 mb-4 pb-2 border-b">Extra Details</h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="grid grid-cols-3 gap-6">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Receipt No</label>
                   <input type="text" name="receiptNo" value={formData.receiptNo} onChange={handleChange} placeholder="Optional" className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-erp-green" />
@@ -203,7 +211,7 @@ const AddIncome = () => {
                   <input type="text" name="approvedBy" value={formData.approvedBy} onChange={handleChange} placeholder="Manager Name" className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-erp-green" />
                 </div>
                 
-                <div className="flex flex-col gap-4 md:flex-row md:col-span-3 items-center mt-2">
+                <div className="flex gap-4 flex-row col-span-3 items-center mt-2">
                   <div className="flex items-center">
                     <input type="checkbox" id="gstIncluded" name="gstIncluded" checked={formData.gstIncluded} onChange={handleChange} className="w-4 h-4 text-erp-green border-gray-300 rounded focus:ring-erp-green" />
                     <label htmlFor="gstIncluded" className="ml-2 block text-sm font-medium text-gray-700">GST Included (Yes/No)</label>

@@ -21,3 +21,8 @@ export const updateLoan = async (loanId, loanData) => {
   const response = await axios.put(`${API_URL}/${loanId}`, loanData);
   return response.data;
 };
+
+export const getProvideLoanDetails = async (customerId) => {
+  const response = await axios.get(`http://localhost:5000/api/provide-loan/customer/${customerId}`);
+  return response.data;
+};

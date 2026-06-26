@@ -7,7 +7,6 @@ const SendGoldRequest = () => {
   const [formData, setFormData] = useState({
     requestNo: '',
     date: new Date().toISOString().split('T')[0],
-    branchName: '',
     itemName: '',
     goldType: '',
     weight: '',
@@ -33,7 +32,6 @@ const SendGoldRequest = () => {
         setFormData({
           requestNo: '',
           date: new Date().toISOString().split('T')[0],
-          branchName: '',
           itemName: '',
           goldType: '',
           weight: '',
@@ -72,11 +70,7 @@ const SendGoldRequest = () => {
             <input type="date" name="date" value={formData.date} onChange={handleChange} required className={inp} />
           </div>
 
-          {/* Branch Name */}
-          <div>
-            <label className={lbl}>Branch Name</label>
-            <input type="text" name="branchName" value={formData.branchName} onChange={handleChange} required className={inp} placeholder="Enter branch name" />
-          </div>
+
 
           {/* Item Name */}
           <div>

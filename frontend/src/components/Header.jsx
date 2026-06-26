@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 import React, { useState, useRef, useEffect } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { LogOut, User } from 'lucide-react';
@@ -23,14 +22,6 @@ const Header = () => {
     navigate('/');
   };
   // Mobile menu states removed
-=======
-import React, { useState, useEffect, useRef } from 'react';
-import { NavLink, useLocation } from 'react-router-dom';
-import { LogOut } from 'lucide-react';
-
-const Header = () => {
-  const location = useLocation();
->>>>>>> bc349fb706e4bcd8458de02e4c1318f493c3b4b6
 
   const menus = [
     {
@@ -79,7 +70,7 @@ const Header = () => {
         { name: 'Closed Account report' },
         { name: 'Repledge report' },
         { name: 'Auction account' },
-        { name: 'Accounts Summary report' },
+        { name: 'Account Summary report' },
         { name: 'Cash Assets report' },
         { name: 'Business report' }
       ]
@@ -117,7 +108,7 @@ const Header = () => {
         .jewel-nav-item:hover .jewel-dropdown-wrapper { display: block; }
       `}</style>
 
-      <header className="jewel-header sticky top-0 z-50 bg-white shadow-sm border-b border-gray-100">
+      <header className="jewel-header sticky top-0 z-50 bg-white shadow-sm border-b border-gray-100 print:hidden">
         <div className="max-w-screen-2xl mx-auto px-6 flex items-center justify-between h-[72px]">
 
           {/* Logo */}

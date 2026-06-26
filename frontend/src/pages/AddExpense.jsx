@@ -1,11 +1,6 @@
-<<<<<<< HEAD
 import React, { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import { FileText, Image as ImageIcon } from 'lucide-react';
-=======
-import React, { useState } from 'react';
-import toast from 'react-hot-toast';
->>>>>>> bc349fb706e4bcd8458de02e4c1318f493c3b4b6
 
 const COMMON_CATEGORIES = [
   'Office Rent', 'EB / Current Bill', 'Staff Salary', 'Internet / Phone Bill',
@@ -18,7 +13,7 @@ const AddExpense = () => {
   const [formData, setFormData] = useState({
     expenseId: '',
     expenseDate: '',
-    branchName: '',
+    expenseDate: new Date().toISOString().split('T')[0],
     expenseCategory: '',
     expenseSubCategory: '',
     expenseAmount: '',
@@ -34,7 +29,6 @@ const AddExpense = () => {
     paymentReferenceNo: ''
   });
 
-<<<<<<< HEAD
   const [expenseImage, setExpenseImage] = useState(null);
   const [previewUrl, setPreviewUrl] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -60,10 +54,6 @@ const AddExpense = () => {
     }
   };
 
-=======
-  const [loading, setLoading] = useState(false);
-
->>>>>>> bc349fb706e4bcd8458de02e4c1318f493c3b4b6
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
     setFormData(prev => ({
@@ -72,7 +62,6 @@ const AddExpense = () => {
     }));
   };
 
-<<<<<<< HEAD
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (file) {
@@ -88,13 +77,10 @@ const AddExpense = () => {
     }
   };
 
-=======
->>>>>>> bc349fb706e4bcd8458de02e4c1318f493c3b4b6
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     try {
-<<<<<<< HEAD
       const formDataToSend = new FormData();
       Object.keys(formData).forEach(key => {
         formDataToSend.append(key, formData[key]);
@@ -106,14 +92,6 @@ const AddExpense = () => {
       const response = await fetch('http://localhost:5000/api/expenses', {
         method: 'POST',
         body: formDataToSend,
-=======
-      const response = await fetch('http://localhost:5000/api/expenses', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData),
->>>>>>> bc349fb706e4bcd8458de02e4c1318f493c3b4b6
       });
 
       const data = await response.json();
@@ -122,21 +100,14 @@ const AddExpense = () => {
         toast.success('Expense added successfully!');
         // Reset form
         setFormData({
-<<<<<<< HEAD
-          expenseId: '', expenseDate: new Date().toISOString().split('T')[0], branchName: '', expenseCategory: '',
-=======
-          expenseId: '', expenseDate: '', branchName: '', expenseCategory: '',
->>>>>>> bc349fb706e4bcd8458de02e4c1318f493c3b4b6
+          expenseId: '', expenseDate: new Date().toISOString().split('T')[0], expenseCategory: '',
           expenseSubCategory: '', expenseAmount: '', paymentMode: '', paidToVendorName: '',
           description: '', billInvoiceNo: '', billReceiptUpload: '', approvedBy: '',
           enteredBy: '', gstIncluded: false, taxAmount: '', paymentReferenceNo: ''
         });
-<<<<<<< HEAD
         setExpenseImage(null);
         setPreviewUrl(null);
         fetchNextExpenseId();
-=======
->>>>>>> bc349fb706e4bcd8458de02e4c1318f493c3b4b6
       } else {
         toast.error(data.message || 'Failed to add expense');
       }
@@ -163,20 +134,13 @@ const AddExpense = () => {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Expense ID / Voucher No <span className="text-red-500">*</span></label>
-<<<<<<< HEAD
                 <input required type="text" name="expenseId" value={formData.expenseId} readOnly className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-erp-green bg-gray-100" placeholder="e.g. EXP-001" />
-=======
-                <input required type="text" name="expenseId" value={formData.expenseId} onChange={handleChange} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-erp-green" placeholder="e.g. EXP-001" />
->>>>>>> bc349fb706e4bcd8458de02e4c1318f493c3b4b6
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Expense Date <span className="text-red-500">*</span></label>
                 <input required type="date" name="expenseDate" value={formData.expenseDate} onChange={handleChange} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-erp-green" />
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Branch Name <span className="text-red-500">*</span></label>
-                <input required type="text" name="branchName" value={formData.branchName} onChange={handleChange} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-erp-green" placeholder="e.g. Main Branch" />
-              </div>
+
               
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Expense Category <span className="text-red-500">*</span></label>
@@ -227,7 +191,6 @@ const AddExpense = () => {
                 <input type="text" name="billInvoiceNo" value={formData.billInvoiceNo} onChange={handleChange} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-erp-green" placeholder="Invoice Number" />
               </div>
               <div>
-<<<<<<< HEAD
                 <label className="block text-sm font-medium text-gray-700 mb-1">Bill / Invoice Upload</label>
                 <input 
                   type="file" 
@@ -250,10 +213,6 @@ const AddExpense = () => {
                     )}
                   </div>
                 )}
-=======
-                <label className="block text-sm font-medium text-gray-700 mb-1">Bill Upload (URL/Path)</label>
-                <input type="text" name="billReceiptUpload" value={formData.billReceiptUpload} onChange={handleChange} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-erp-green" placeholder="Drive Link / URL" />
->>>>>>> bc349fb706e4bcd8458de02e4c1318f493c3b4b6
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Payment Reference No</label>

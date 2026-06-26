@@ -31,21 +31,12 @@ const CallReport = () => {
 
   return (
     <div className="p-6">
-<<<<<<< HEAD
       <div className="flex flex-row justify-between items-center gap-4 mb-6">
         <h2 className="text-2xl font-bold text-black">Call Report</h2>
       </div>
 
       <div className="bg-erp-card rounded-lg shadow-lg overflow-x-auto">
         <table className="w-full text-left border-collapse whitespace-nowrap">
-=======
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold text-erp-gold">Call Report</h2>
-      </div>
-
-      <div className="bg-erp-card rounded-lg shadow-lg overflow-x-auto">
-        <table className="w-full text-left border-collapse">
->>>>>>> bc349fb706e4bcd8458de02e4c1318f493c3b4b6
           <thead>
             <tr className="bg-erp-dark border-b border-erp-green-dark">
               <th className="p-4 text-text-secondary font-medium">Call Date</th>
@@ -76,11 +67,7 @@ const CallReport = () => {
                   <td className="p-4 text-text-primary">{followup.mobileNumber}</td>
                   <td className="p-4 text-text-primary">{followup.loanNumber}</td>
                   <td className="p-4 text-text-primary">
-<<<<<<< HEAD
                     <span className="px-2 py-1 bg-black border border-black text-white text-xs rounded-full">
-=======
-                    <span className="px-2 py-1 bg-erp-dark border border-erp-gold text-erp-gold text-xs rounded-full">
->>>>>>> bc349fb706e4bcd8458de02e4c1318f493c3b4b6
                       {followup.followupType}
                     </span>
                   </td>

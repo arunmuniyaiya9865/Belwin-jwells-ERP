@@ -85,7 +85,7 @@ exports.getRemittanceById = async (req, res) => {
 // Get remittance report with filters and summary
 exports.getRemittanceReport = async (req, res) => {
     try {
-        const { fromDate, toDate, branchName, remittanceType, remittanceNo } = req.query;
+        const { fromDate, toDate, remittanceType, remittanceNo } = req.query;
         let filter = {};
 
         if (fromDate || toDate) {
@@ -94,7 +94,6 @@ exports.getRemittanceReport = async (req, res) => {
             if (toDate) filter.date.$lte = new Date(toDate);
         }
 
-        if (branchName) filter.branchName = new RegExp(branchName, 'i');
         if (remittanceType) filter.remittanceType = remittanceType;
         if (remittanceNo) filter.remittanceNo = new RegExp(remittanceNo, 'i');
 

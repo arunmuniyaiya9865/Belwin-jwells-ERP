@@ -1,6 +1,5 @@
 const Denomination = require('../models/Denomination');
 
-<<<<<<< HEAD
 // @desc    Get next Denomination ID
 // @route   GET /api/denominations/next-id
 // @access  Public
@@ -29,7 +28,7 @@ const getNextDenominationId = async (req, res) => {
 const createDenomination = async (req, res) => {
   try {
     const {
-      denominationId, entryDate, branchName, cashInHandTotal,
+      denominationId, entryDate, cashInHandTotal,
       notes500, notes200, notes100, notes50, notes20, notes10, coinsTotal,
       enteredBy, verifiedBy, verifiedTime, remarks
     } = req.body;
@@ -50,7 +49,7 @@ const createDenomination = async (req, res) => {
     }
 
     const denomination = await Denomination.create({
-      denominationId, entryDate, branchName, cashInHandTotal,
+      denominationId, entryDate, cashInHandTotal,
       notes500, notes200, notes100, notes50, notes20, notes10, coinsTotal,
       grandTotal, enteredBy, verifiedBy, verifiedTime, remarks
     });
@@ -138,27 +137,4 @@ module.exports = {
   getDenominations,
   getDenominationById,
   updateDenomination
-=======
-// Add a new denomination record
-exports.addDenomination = async (req, res) => {
-    try {
-        const denomination = new Denomination(req.body);
-        const savedDenomination = await denomination.save();
-        res.status(201).json({ success: true, data: savedDenomination });
-    } catch (error) {
-        console.error('Error adding denomination:', error);
-        res.status(400).json({ success: false, message: error.message });
-    }
-};
-
-// Get all denomination records
-exports.getDenominations = async (req, res) => {
-    try {
-        const denominations = await Denomination.find().sort({ createdAt: -1 });
-        res.status(200).json({ success: true, data: denominations });
-    } catch (error) {
-        console.error('Error fetching denominations:', error);
-        res.status(500).json({ success: false, message: 'Server error' });
-    }
->>>>>>> bc349fb706e4bcd8458de02e4c1318f493c3b4b6
 };

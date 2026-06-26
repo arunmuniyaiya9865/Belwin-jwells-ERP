@@ -103,7 +103,7 @@ const createCustomer = async (req, res) => {
             mobileNumber, alternateNumber, aadhaarNumber, panNumber,
             doorStreet, area, city, postalCode,
             permanentAddress, temporaryAddress, voterId, occupation,
-            remarks, proof2Name, branchId,
+            remarks, proof2Name,
             customerPhotoUrl, customerPhotoPublicId,
             aadhaarDocumentUrl, aadhaarDocumentPublicId,
             proof2DocumentUrl, proof2DocumentPublicId,
@@ -139,7 +139,6 @@ const createCustomer = async (req, res) => {
         // 3. Create record
         const customer = new Customer({
             customerId, // Manually set generated ID
-            branchId: branchId || 'Main Branch', // Support multi-branch
             customerName, guardianName, dateOfBirth, age, gender,
             mobileNumber, alternateNumber, aadhaarNumber, panNumber,
             doorStreet, area, city, postalCode,

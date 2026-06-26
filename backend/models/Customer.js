@@ -22,8 +22,7 @@ const customerSchema = new mongoose.Schema({
     // Generated ID e.g. BWC-0001
     customerId: { type: String, unique: true, index: true },
 
-    // Branch Association
-    branchId: { type: String, index: true },
+    // Removed branchId
 
     // Personal
     customerName:  { type: String, required: true, trim: true },

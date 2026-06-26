@@ -24,23 +24,20 @@ import EditIncome from './pages/EditIncome';
 import IncomeReport from './pages/IncomeReport';
 import AddDenomination from './pages/AddDenomination';
 import AddFollowup from './pages/AddFollowup';
-<<<<<<< HEAD
 import AddRemittance from './pages/AddRemittance';
 import RemittanceHistory from './pages/RemittanceHistory';
 import CallReport from './pages/CallReport';
 import SendGoldRequest from './pages/SendGoldRequest';
 import GoldStockReport from './pages/GoldStockReport';
 import Schemes from './pages/Schemes';
-=======
-import CallReport from './pages/CallReport';
->>>>>>> bc349fb706e4bcd8458de02e4c1318f493c3b4b6
+import DailySummaryReport from './pages/DailySummaryReport';
 
 function App() {
   return (
     <Router>
       <div className="flex flex-col min-h-screen bg-erp-dark text-text-primary">
         <Header />
-        <main className="flex-1 w-full p-6">
+        <main className="flex-1 w-full p-6 print:p-0">
           <Routes>
             <Route path="/" element={<Dashboard />} />
             <Route path="/new-customer" element={<NewCustomer />} />
@@ -54,13 +51,9 @@ function App() {
             <Route path="/top-up-loan" element={<TopUpLoan />} />
             <Route path="/receive-payment" element={<ReceivePayment />} />
             <Route path="/payment-history" element={<PaymentHistory />} />
-<<<<<<< HEAD
 
-=======
-            
->>>>>>> bc349fb706e4bcd8458de02e4c1318f493c3b4b6
             {/* Reports */}
-            <Route path="/daily-summary-report" element={<ReportsDashboard />} />
+            <Route path="/daily-summary-report" element={<DailySummaryReport />} />
             <Route path="/today-collection-report" element={<ReportsDashboard />} />
             <Route path="/loan-report" element={<ReportsDashboard />} />
             <Route path="/loan-outstanding-report" element={<ReportsDashboard />} />
@@ -69,7 +62,7 @@ function App() {
             <Route path="/closed-account-report" element={<ReportsDashboard />} />
             <Route path="/repledge-report" element={<ReportsDashboard />} />
             <Route path="/auction-account" element={<ReportsDashboard />} />
-            <Route path="/accounts-summary-report" element={<ReportsDashboard />} />
+            <Route path="/account-summary-report" element={<ReportsDashboard />} />
             <Route path="/cash-assets-report" element={<ReportsDashboard />} />
             <Route path="/business-report" element={<ReportsDashboard />} />
 
@@ -77,20 +70,18 @@ function App() {
             <Route path="/add-expense" element={<AddExpense />} />
             <Route path="/edit-expense" element={<EditExpense />} />
             <Route path="/expense-report" element={<ExpenseReport />} />
-<<<<<<< HEAD
 
             {/* income */}
-=======
->>>>>>> bc349fb706e4bcd8458de02e4c1318f493c3b4b6
             <Route path="/add-income" element={<AddIncome />} />
             <Route path="/edit-income" element={<EditIncome />} />
             <Route path="/income-report" element={<IncomeReport />} />
             <Route path="/add-denomination" element={<AddDenomination />} />
-<<<<<<< HEAD
 
             {/* Customer call */}
             <Route path="/call-log" element={<AddFollowup />} />
             <Route path="/pending-calls" element={<CallReport />} />
+            <Route path="/add-followup" element={<AddFollowup />} />
+            <Route path="/call-report" element={<CallReport />} />
 
             {/* Remittance */}
             <Route path="/new-remittance" element={<AddRemittance />} />
@@ -102,14 +93,6 @@ function App() {
 
             {/* Info */}
             <Route path="/schemes" element={<Schemes />} />
-
-            {/* Other routes will go here */}
-=======
-            {/* Customer Calls */}
-            <Route path="/add-followup" element={<AddFollowup />} />
-            <Route path="/call-report" element={<CallReport />} />
-            {/* Add other routes here later */}
->>>>>>> bc349fb706e4bcd8458de02e4c1318f493c3b4b6
           </Routes>
         </main>
         <Footer />

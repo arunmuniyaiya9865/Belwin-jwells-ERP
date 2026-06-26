@@ -6,47 +6,34 @@ import { Printer, Download, FileText, Search, FilterX, Eye } from 'lucide-react'
 const IncomeReport = () => {
   const [incomes, setIncomes] = useState([]);
   const [loading, setLoading] = useState(true);
-<<<<<<< HEAD
   const [summary, setSummary] = useState({
     totalIncomeEntries: 0,
     totalIncomeAmount: 0,
     cashIncome: 0,
     bankOnlineIncome: 0
   });
-=======
->>>>>>> bc349fb706e4bcd8458de02e4c1318f493c3b4b6
 
   // Filter States
   const [datePreset, setDatePreset] = useState('All Time');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
-  const [branchFilter, setBranchFilter] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('');
   const [paymentModeFilter, setPaymentModeFilter] = useState('');
   const [sourceFilter, setSourceFilter] = useState('');
-<<<<<<< HEAD
   const [incomeIdFilter, setIncomeIdFilter] = useState('');
-=======
->>>>>>> bc349fb706e4bcd8458de02e4c1318f493c3b4b6
 
   // Dropdown options derived from data
-  const [branches, setBranches] = useState([]);
   const [categories, setCategories] = useState([]);
   const [paymentModes, setPaymentModes] = useState([]);
   const [sources, setSources] = useState([]);
 
   useEffect(() => {
     fetchIncomes();
-<<<<<<< HEAD
   }, [startDate, endDate, categoryFilter, paymentModeFilter, incomeIdFilter]);
-=======
-  }, []);
->>>>>>> bc349fb706e4bcd8458de02e4c1318f493c3b4b6
 
   const fetchIncomes = async () => {
     try {
       setLoading(true);
-<<<<<<< HEAD
       
       const queryParams = new URLSearchParams();
       if (startDate) queryParams.append('fromDate', startDate);
@@ -67,18 +54,6 @@ const IncomeReport = () => {
           setCategories([...new Set(data.data.map(i => i.incomeCategory).filter(Boolean))]);
           setPaymentModes([...new Set(data.data.map(i => i.paymentMode).filter(Boolean))]);
         }
-=======
-      const response = await fetch('http://localhost:5000/api/incomes');
-      const data = await response.json();
-      if (data.success) {
-        setIncomes(data.data);
-        
-        // Extract unique values for dropdowns
-        setBranches([...new Set(data.data.map(i => i.branchName).filter(Boolean))]);
-        setCategories([...new Set(data.data.map(i => i.incomeCategory).filter(Boolean))]);
-        setPaymentModes([...new Set(data.data.map(i => i.paymentMode).filter(Boolean))]);
-        setSources([...new Set(data.data.map(i => i.receivedFrom).filter(Boolean))]);
->>>>>>> bc349fb706e4bcd8458de02e4c1318f493c3b4b6
       }
     } catch (error) {
       console.error('Error fetching incomes:', error);
@@ -120,90 +95,14 @@ const IncomeReport = () => {
     setEndDate(end);
   };
 
-<<<<<<< HEAD
   // Summary Calculations - Moved to Backend
-=======
-  // Filter Logic
-  const filteredIncomes = useMemo(() => {
-    return incomes.filter(inc => {
-      const incDate = new Date(inc.incomeDate).setHours(0, 0, 0, 0);
-      
-      let passDate = true;
-      if (startDate && endDate) {
-        const start = new Date(startDate).setHours(0, 0, 0, 0);
-        const end = new Date(endDate).setHours(23, 59, 59, 999);
-        passDate = incDate >= start && incDate <= end;
-      } else if (startDate) {
-        passDate = incDate >= new Date(startDate).setHours(0, 0, 0, 0);
-      } else if (endDate) {
-        passDate = incDate <= new Date(endDate).setHours(23, 59, 59, 999);
-      }
-
-      const passBranch = branchFilter ? inc.branchName === branchFilter : true;
-      const passCategory = categoryFilter ? inc.incomeCategory === categoryFilter : true;
-      const passPaymentMode = paymentModeFilter ? inc.paymentMode === paymentModeFilter : true;
-      const passSource = sourceFilter ? (inc.receivedFrom || '').toLowerCase().includes(sourceFilter.toLowerCase()) : true;
-
-      return passDate && passBranch && passCategory && passPaymentMode && passSource;
-    });
-  }, [incomes, startDate, endDate, branchFilter, categoryFilter, paymentModeFilter, sourceFilter]);
-
-  // Summary Calculations
-  const summary = useMemo(() => {
-    const today = new Date().setHours(0, 0, 0, 0);
-    const thisMonth = new Date().getMonth();
-    const thisYear = new Date().getFullYear();
-
-    let total = 0;
-    let todayTotal = 0;
-    let monthTotal = 0;
-    let cashTotal = 0;
-    let bankUpiTotal = 0;
-    
-    const branchTotals = {};
-    const categoryTotals = {};
-
-    filteredIncomes.forEach(inc => {
-      const amt = inc.amount || 0;
-      total += amt;
-
-      const incDateObj = new Date(inc.incomeDate);
-      const incDate = incDateObj.setHours(0, 0, 0, 0);
-
-      if (incDate === today) todayTotal += amt;
-      if (incDateObj.getMonth() === thisMonth && incDateObj.getFullYear() === thisYear) {
-        monthTotal += amt;
-      }
-
-      if (inc.paymentMode === 'Cash') cashTotal += amt;
-      if (['Bank Transfer', 'UPI', 'Card', 'Cheque'].includes(inc.paymentMode)) bankUpiTotal += amt;
-
-      if (inc.branchName) {
-        branchTotals[inc.branchName] = (branchTotals[inc.branchName] || 0) + amt;
-      }
-      if (inc.incomeCategory) {
-        categoryTotals[inc.incomeCategory] = (categoryTotals[inc.incomeCategory] || 0) + amt;
-      }
-    });
-
-    const topBranch = Object.keys(branchTotals).sort((a,b) => branchTotals[b] - branchTotals[a])[0];
-    const topCategory = Object.keys(categoryTotals).sort((a,b) => categoryTotals[b] - categoryTotals[a])[0];
-
-    return { total, todayTotal, monthTotal, cashTotal, bankUpiTotal, topBranch, topCategory, branchTotals, categoryTotals };
-  }, [filteredIncomes]);
->>>>>>> bc349fb706e4bcd8458de02e4c1318f493c3b4b6
 
   // Export CSV
   const handleExportCSV = () => {
-    const headers = ['Date', 'Income ID', 'Branch', 'Category', 'Sub Category', 'Received From', 'Amount', 'Mode', 'Received By', 'Approved By'];
-<<<<<<< HEAD
+    const headers = ['Date', 'Income ID', 'Category', 'Sub Category', 'Received From', 'Amount', 'Mode', 'Received By', 'Approved By'];
     const rows = incomes.map(inc => [
-=======
-    const rows = filteredIncomes.map(inc => [
->>>>>>> bc349fb706e4bcd8458de02e4c1318f493c3b4b6
       inc.incomeDate ? new Date(inc.incomeDate).toLocaleDateString() : '',
       inc.incomeId || '',
-      inc.branchName || '',
       inc.incomeCategory || '',
       inc.incomeSubCategory || '',
       inc.receivedFrom || '',
@@ -232,16 +131,9 @@ const IncomeReport = () => {
     setDatePreset('All Time');
     setStartDate('');
     setEndDate('');
-<<<<<<< HEAD
     setCategoryFilter('');
     setPaymentModeFilter('');
     setIncomeIdFilter('');
-=======
-    setBranchFilter('');
-    setCategoryFilter('');
-    setPaymentModeFilter('');
-    setSourceFilter('');
->>>>>>> bc349fb706e4bcd8458de02e4c1318f493c3b4b6
   };
 
   if (loading) return <div className="p-6 text-center text-gray-600">Loading comprehensive income report...</div>;
@@ -264,7 +156,6 @@ const IncomeReport = () => {
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 print:grid-cols-4">
         <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-100">
-<<<<<<< HEAD
           <p className="text-sm text-gray-500 font-medium">Total Income Entries</p>
           <p className="text-2xl font-bold text-gray-800">{summary.totalIncomeEntries}</p>
         </div>
@@ -279,34 +170,6 @@ const IncomeReport = () => {
         <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-100">
           <p className="text-sm text-gray-500 font-medium">Bank / Online Income</p>
           <p className="text-2xl font-bold text-gray-800">₹{summary.bankOnlineIncome.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</p>
-=======
-          <p className="text-sm text-gray-500 font-medium">Today's Income</p>
-          <p className="text-2xl font-bold text-gray-800">₹{summary.todayTotal.toLocaleString('en-IN')}</p>
-        </div>
-        <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-100">
-          <p className="text-sm text-gray-500 font-medium">This Month's Income</p>
-          <p className="text-2xl font-bold text-gray-800">₹{summary.monthTotal.toLocaleString('en-IN')}</p>
-        </div>
-        <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-100">
-          <p className="text-sm text-gray-500 font-medium">Cash Income (Filtered)</p>
-          <p className="text-2xl font-bold text-gray-800">₹{summary.cashTotal.toLocaleString('en-IN')}</p>
-        </div>
-        <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-100">
-          <p className="text-sm text-gray-500 font-medium">Bank/UPI Income (Filtered)</p>
-          <p className="text-2xl font-bold text-gray-800">₹{summary.bankUpiTotal.toLocaleString('en-IN')}</p>
-        </div>
-        <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-100 md:col-span-2 lg:col-span-2">
-          <p className="text-sm text-gray-500 font-medium">Top Income Category</p>
-          <p className="text-xl font-semibold text-gray-800 truncate">
-            {summary.topCategory ? `${summary.topCategory} (₹${summary.categoryTotals[summary.topCategory].toLocaleString('en-IN')})` : 'N/A'}
-          </p>
-        </div>
-        <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-100 md:col-span-2 lg:col-span-2">
-          <p className="text-sm text-gray-500 font-medium">Top Earning Branch</p>
-          <p className="text-xl font-semibold text-gray-800 truncate">
-            {summary.topBranch ? `${summary.topBranch} (₹${summary.branchTotals[summary.topBranch].toLocaleString('en-IN')})` : 'N/A'}
-          </p>
->>>>>>> bc349fb706e4bcd8458de02e4c1318f493c3b4b6
         </div>
       </div>
 
@@ -342,16 +205,8 @@ const IncomeReport = () => {
             </div>
           </div>
           <div>
-<<<<<<< HEAD
             <label className="block text-xs text-gray-500 mb-1">Income ID</label>
             <input type="text" value={incomeIdFilter} onChange={e => setIncomeIdFilter(e.target.value)} className="w-full text-sm px-3 py-2 border rounded-md" placeholder="e.g. INC000001" />
-=======
-            <label className="block text-xs text-gray-500 mb-1">Branch</label>
-            <select value={branchFilter} onChange={e => setBranchFilter(e.target.value)} className="w-full text-sm px-3 py-2 border rounded-md bg-white">
-              <option value="">All Branches</option>
-              {branches.map(b => <option key={b} value={b}>{b}</option>)}
-            </select>
->>>>>>> bc349fb706e4bcd8458de02e4c1318f493c3b4b6
           </div>
           <div>
             <label className="block text-xs text-gray-500 mb-1">Category</label>
@@ -374,11 +229,7 @@ const IncomeReport = () => {
       <div className="bg-white rounded-lg shadow-sm border border-gray-100 flex-1 flex flex-col overflow-hidden print:border-none print:shadow-none">
         <div className="bg-gray-50 px-6 py-4 border-b border-gray-200 flex justify-between items-center print:bg-white print:border-b-2 print:border-black print:px-0">
           <h2 className="text-lg font-bold text-gray-800">Filtered Incomes</h2>
-<<<<<<< HEAD
           <span className="text-gray-600 font-medium text-sm">Showing {incomes.length} records</span>
-=======
-          <span className="text-gray-600 font-medium text-sm">Showing {filteredIncomes.length} records</span>
->>>>>>> bc349fb706e4bcd8458de02e4c1318f493c3b4b6
         </div>
         
         <div className="flex-1 overflow-auto">
@@ -387,7 +238,6 @@ const IncomeReport = () => {
               <tr className="bg-white border-b-2 border-gray-200 text-gray-700 print:border-black">
                 <th className="px-4 py-3 font-semibold">Date</th>
                 <th className="px-4 py-3 font-semibold">Income ID</th>
-                <th className="px-4 py-3 font-semibold">Branch</th>
                 <th className="px-4 py-3 font-semibold">Category / Sub</th>
                 <th className="px-4 py-3 font-semibold">Received From</th>
                 <th className="px-4 py-3 font-semibold">Mode</th>
@@ -396,19 +246,13 @@ const IncomeReport = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-<<<<<<< HEAD
               {incomes.length > 0 ? (
                 incomes.map((inc) => (
-=======
-              {filteredIncomes.length > 0 ? (
-                filteredIncomes.map((inc) => (
->>>>>>> bc349fb706e4bcd8458de02e4c1318f493c3b4b6
                   <tr key={inc._id} className="hover:bg-gray-50 transition-colors">
                     <td className="px-4 py-3 text-gray-700 whitespace-nowrap">
                       {inc.incomeDate ? new Date(inc.incomeDate).toLocaleDateString('en-IN') : '-'}
                     </td>
                     <td className="px-4 py-3 font-medium text-gray-800">{inc.incomeId}</td>
-                    <td className="px-4 py-3 text-gray-600">{inc.branchName}</td>
                     <td className="px-4 py-3">
                       <div className="flex flex-col">
                         <span className="font-medium text-gray-800">{inc.incomeCategory}</span>
@@ -442,20 +286,12 @@ const IncomeReport = () => {
                 </tr>
               )}
             </tbody>
-<<<<<<< HEAD
             {incomes.length > 0 && (
-=======
-            {filteredIncomes.length > 0 && (
->>>>>>> bc349fb706e4bcd8458de02e4c1318f493c3b4b6
               <tfoot className="bg-gray-50 border-t-2 border-gray-200 print:border-black">
                 <tr>
                   <td colSpan="6" className="px-4 py-4 text-right font-bold text-gray-800 uppercase tracking-wider">Filtered Total:</td>
                   <td className="px-4 py-4 text-right font-bold text-erp-green text-lg print:text-black">
-<<<<<<< HEAD
                     ₹{summary.totalIncomeAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-=======
-                    ₹{summary.total.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
->>>>>>> bc349fb706e4bcd8458de02e4c1318f493c3b4b6
                   </td>
                   <td className="print:hidden"></td>
                 </tr>

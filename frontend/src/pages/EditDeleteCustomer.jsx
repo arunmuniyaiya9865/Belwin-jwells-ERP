@@ -36,19 +36,8 @@ const StatusBadge = ({ status }) => {
   );
 };
 
-<<<<<<< HEAD
 const fmtDate = (d) =>
   d ? new Date(d).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '—';
-=======
-  const handleSearch = (e) => {
-    e.preventDefault();
-    if (!searchQuery.trim()) return toast.error('Enter an ID or mobile number');
-    const results = searchCustomers(searchQuery);
-    setSearchResults(results);
-    if (results.length === 0) toast.error('No customers found');
-    setFormData(null);
-  };
->>>>>>> bc349fb706e4bcd8458de02e4c1318f493c3b4b6
 
 const maskAadhaar = (val) => {
   if (!val) return '—';
@@ -455,7 +444,6 @@ const EditDeleteCustomer = () => {
         </div>
       </div>
 
-<<<<<<< HEAD
       {/* ── Filter Bar ── */}
       <div className="mb-4 shrink-0 bg-white p-3 rounded-xl shadow-sm border border-gray-100 flex flex-wrap items-center gap-3">
         {/* Search */}
@@ -544,27 +532,6 @@ const EditDeleteCustomer = () => {
                             {sort.sortOrder === 'asc' ? '↑' : '↓'}
                          </span>
                        )}
-=======
-      {/* Search Bar */}
-      <div className="mb-3 shrink-0 relative">
-        <form onSubmit={handleSearch} className="flex gap-2">
-          <div className="relative flex-1 max-w-md">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-            <input
-              type="text" value={searchQuery} onChange={e => { setSearchQuery(e.target.value); setSearchResults([]); }}
-              placeholder="Search by ID or mobile number..."
-              className="w-full pl-9 pr-3 py-2 text-sm bg-white border border-gray-300 shadow-sm rounded-md focus:ring-1 focus:ring-green-500 focus:border-green-500 transition-colors"
-            />
-            {/* Dropdown */}
-            {searchResults.length > 0 && (
-              <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-xl z-50 overflow-hidden">
-                {searchResults.map(c => (
-                  <button key={c.id} type="button" onClick={() => handleSelectCustomer(c)}
-                    className="w-full text-left px-4 py-2.5 hover:bg-green-50 border-b border-gray-100 last:border-0 transition-colors flex justify-between items-center">
-                    <div>
-                      <span className="font-semibold text-gray-800 text-sm">{c.customerName}</span>
-                      <span className="text-gray-400 text-xs ml-2">· {c.mobileNumber}</span>
->>>>>>> bc349fb706e4bcd8458de02e4c1318f493c3b4b6
                     </div>
                   </th>
                 ))}
@@ -766,7 +733,6 @@ const EditDeleteCustomer = () => {
               </div>
             </div>
 
-<<<<<<< HEAD
             {/* Scrollable body */}
             <div className="flex-1 overflow-y-auto custom-scrollbar bg-[#FDFEFE]">
               <div className="p-6 space-y-6">
@@ -785,18 +751,6 @@ const EditDeleteCustomer = () => {
                           <InfoRow label="Voter ID" value={viewCustomer.voterId} icon={FileText} />
                        </div>
                     </div>
-=======
-      {/* Empty State */}
-      {!formData && (
-        <div className="flex-1 bg-white border border-gray-100 rounded-lg shadow-sm flex flex-col items-center justify-center text-center p-8">
-          <div className="w-16 h-16 rounded-full bg-green-50 flex items-center justify-center mb-4">
-            <Search className="w-8 h-8 text-green-400" />
-          </div>
-          <h3 className="text-base font-semibold text-gray-600 mb-1">Search for a Customer</h3>
-          <p className="text-sm text-gray-400 max-w-xs">Type a customer ID or mobile number above and click Search to load their details.</p>
-        </div>
-      )}
->>>>>>> bc349fb706e4bcd8458de02e4c1318f493c3b4b6
 
                     {/* Personal Details */}
                     <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
@@ -874,7 +828,6 @@ const EditDeleteCustomer = () => {
                           </div>
                        </div>
 
-<<<<<<< HEAD
                        <div className="grid grid-cols-2 gap-4">
                           {[
                             { label: 'AADHAAR DOCUMENT', url: viewCustomer.aadhaarDocumentUrl },
@@ -906,71 +859,6 @@ const EditDeleteCustomer = () => {
                           ))}
                        </div>
                     </div>
-=======
-              {/* Row 3 */}
-              <div>
-                <label className={lbl}>Door No/Street <span className="text-red-500">*</span></label>
-                <input type="text" name="doorNo" value={formData.doorNo} onChange={handleInputChange} className={inp} />
-              </div>
-              <div>
-                <label className={lbl}>Area <span className="text-red-500">*</span></label>
-                <input type="text" name="area" value={formData.area} onChange={handleInputChange} className={inp} />
-              </div>
-              <div>
-                <label className={lbl}>City</label>
-                <input type="text" name="city" value={formData.city} onChange={handleInputChange} className={inp} />
-              </div>
-              <div>
-                <label className={lbl}>Postal Code</label>
-                <input type="text" name="postalCode" value={formData.postalCode} onChange={handleInputChange} className={inp} />
-              </div>
-
-              {/* Row 4: Addresses */}
-              <div className="col-span-2">
-                <label className={lbl}>Permanent Address <span className="text-red-500">*</span></label>
-                <textarea name="permanentAddress" value={formData.permanentAddress} onChange={handleInputChange} rows="2" className={`${inp} resize-none`} />
-              </div>
-              <div className="col-span-2">
-                <label className={lbl}>Temporary Address <span className="text-red-500">*</span></label>
-                <textarea name="temporaryAddress" value={formData.temporaryAddress || ''} onChange={handleInputChange} rows="2" className={`${inp} resize-none`} />
-              </div>
-
-              {/* Row 5 */}
-              <div>
-                <label className={lbl}>Voter ID</label>
-                <input type="text" name="voterId" value={formData.voterId} onChange={handleInputChange} className={inp} />
-              </div>
-              <div>
-                <label className={lbl}>Occupation</label>
-                <input type="text" name="occupation" value={formData.occupation} onChange={handleInputChange} className={inp} />
-              </div>
-              <div className="col-span-2">
-                <label className={lbl}>Remarks</label>
-                <input type="text" name="remarks" value={formData.remarks} onChange={handleInputChange} className={inp} />
-              </div>
-
-              {/* Uploads */}
-              <div className="col-span-4 grid grid-cols-3 gap-5 pt-2">
-                {[
-                  { label: 'Photo', key: 'photo', ref: photoInputRef, accept: 'image/*' },
-                  { label: 'Aadhar Document', key: 'aadharFile', ref: aadharInputRef, accept: '' },
-                  { label: 'Proof 2 Document', key: 'proof2File', ref: proof2InputRef, accept: '' }
-                ].map(({ label, key, ref, accept }) => (
-                  <div key={key}>
-                    <label className={lbl}>{label}</label>
-                  <div className="flex items-center gap-2">
-                    {key === 'proof2File' && (
-                      <input type="text" name="proof2Name" value={formData.proof2Name} onChange={handleInputChange}
-                        placeholder="Proof name" className="w-28 px-2 py-1.5 text-xs bg-white border border-gray-300 shadow-sm rounded-md focus:ring-1 focus:ring-green-500 focus:border-green-500 transition-colors shrink-0 outline-none" />
-                    )}
-                    <button type="button" onClick={() => ref.current.click()}
-                      className="flex items-center px-3 py-1.5 bg-white border border-gray-300 shadow-sm rounded-md text-xs font-medium text-gray-700 hover:bg-gray-50 shrink-0 transition-colors">
-                      <Upload className="w-3 h-3 mr-1" /> Browse
-                    </button>
-                    <span className="text-xs text-gray-500 truncate">{files[key] ? files[key].name : 'No file'}</span>
-                    <input type="file" ref={ref} onChange={e => handleFileChange(e, key)} className="hidden" accept={accept} />
-                  </div>
->>>>>>> bc349fb706e4bcd8458de02e4c1318f493c3b4b6
                   </div>
                 )}
 

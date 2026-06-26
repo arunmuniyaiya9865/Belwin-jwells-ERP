@@ -1,9 +1,8 @@
-<<<<<<< HEAD
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Save, RefreshCcw, XCircle, Search } from 'lucide-react';
 import toast, { Toaster } from 'react-hot-toast';
 import { getCustomerById } from '../services/customerService';
-import { createLoan } from '../services/loanService';
+import { createLoan, getProvideLoanDetails } from '../services/loanService';
 
 const ProvideLoan = () => {
   const [activeTab, setActiveTab] = useState('Receipt');
@@ -22,6 +21,8 @@ const ProvideLoan = () => {
     fatherHusbandName: '',
     address: '',
     loanDate: new Date().toISOString().slice(0, 10),
+    loanStartDate: new Date().toISOString().slice(0, 10),
+    loanEndDate: '',
     loanAmount: '',
     remainingLoanAmount: '',
     status: 'Pending',
@@ -37,7 +38,16 @@ const ProvideLoan = () => {
     enterDays: '',
     receiptDate: new Date().toISOString().slice(0, 10),
     receiptAmount: '',
-    penalty: false
+    penalty: false,
+    schemeId: '',
+    schemeName: '',
+    employeeId: '',
+    employeeName: '',
+    gramRate: '',
+    minimumGram: '',
+    maturePeriod: '',
+    interestRepaymentMonths: '',
+    penaltyPercent: ''
   });
 
   const [articles, setArticles] = useState([
@@ -99,6 +109,20 @@ const ProvideLoan = () => {
     setTotalWt(sumWt > 0 ? sumWt.toFixed(2) : '');
   };
 
+  useEffect(() => {
+    if (formData.loanStartDate && formData.maturePeriod) {
+      const startDate = new Date(formData.loanStartDate);
+      if (!isNaN(startDate)) {
+        const endDate = new Date(startDate);
+        endDate.setMonth(endDate.getMonth() + parseInt(formData.maturePeriod));
+        setFormData(prev => ({
+          ...prev,
+          loanEndDate: endDate.toISOString().slice(0, 10)
+        }));
+      }
+    }
+  }, [formData.loanStartDate, formData.maturePeriod]);
+
   const handleSearchCustomer = async () => {
     if (!searchCustomerId) {
       toast.error('Please enter a Customer ID to search.');
@@ -106,10 +130,9 @@ const ProvideLoan = () => {
     }
     setIsCustomerLoading(true);
     try {
-      // Backend getCustomerById supports querying by custom `customerId` or `_id` 
-      // Need to adjust if the backend only supports `_id`. The route is usually flexible.
-      const res = await getCustomerById(searchCustomerId);
-      const customer = res?.data;
+      const data = await getProvideLoanDetails(searchCustomerId);
+      const customer = data?.customer;
+      const scheme = data?.scheme;
 
       if (!customer) {
         toast.error('Customer not found');
@@ -125,14 +148,26 @@ const ProvideLoan = () => {
       setDbCustomerId(customer._id);
       setFormData(prev => ({
         ...prev,
-        name: customer.customerName || '',
-        mobileNo: customer.mobileNumber || '',
-        fatherHusbandName: customer.guardianName || '',
-        address: `${customer.doorStreet || ''} ${customer.city || ''}`.trim()
+        name: customer.name || '',
+        mobileNo: customer.mobileNo || '',
+        fatherHusbandName: customer.fatherHusbandName || '',
+        address: customer.address || '',
+        schemeId: scheme?.schemeId || '',
+        schemeName: scheme?.schemeName || '',
+        employeeId: scheme?.employeeId || '',
+        employeeName: scheme?.employeeName || '',
+        loanAmount: scheme?.loanAmount || prev.loanAmount,
+        interestRate: scheme?.interestPercent || prev.interestRate,
+        gramRate: scheme?.gramRate || prev.gramRate,
+        minimumGram: scheme?.minimumGram || prev.minimumGram,
+        maturePeriod: scheme?.maturePeriod || prev.maturePeriod,
+        interestRepaymentMonths: scheme?.interestRepaymentMonths || prev.interestRepaymentMonths,
+        documentCharge: scheme?.documentCharges || prev.documentCharge,
+        penaltyPercent: scheme?.penaltyPercent || prev.penaltyPercent
       }));
       toast.success('Customer found and details populated.');
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Error fetching customer. Check ID format.');
+      toast.error(error.response?.data?.message || 'Error fetching customer or scheme.');
     } finally {
       setIsCustomerLoading(false);
     }
@@ -156,6 +191,8 @@ const ProvideLoan = () => {
         fatherHusbandName: formData.fatherHusbandName,
         address: formData.address,
         loanDate: formData.loanDate,
+        loanStartDate: formData.loanStartDate,
+        loanEndDate: formData.loanEndDate,
         loanAmount: parseFloat(formData.loanAmount) || 0,
         remainingLoanAmount: parseFloat(formData.remainingLoanAmount) || 0,
         status: formData.status,
@@ -176,6 +213,17 @@ const ProvideLoan = () => {
         },
         articles: articles.filter(a => a.category),
         totalWt: parseFloat(totalWt) || 0,
+        schemeId: formData.schemeId,
+        schemeName: formData.schemeName,
+        employeeId: formData.employeeId,
+        employeeName: formData.employeeName,
+        interestPercent: parseFloat(formData.interestRate) || 0,
+        gramRate: parseFloat(formData.gramRate) || 0,
+        minimumGram: parseFloat(formData.minimumGram) || 0,
+        maturePeriod: parseInt(formData.maturePeriod) || 0,
+        interestRepaymentMonths: parseInt(formData.interestRepaymentMonths) || 0,
+        documentCharges: parseFloat(formData.documentCharge) || 0,
+        penaltyPercent: parseFloat(formData.penaltyPercent) || 0,
         repledgeDetails: activeTab === 'Repledge' ? {
           ...repledge,
           interestRate: parseFloat(repledge.interestRate) || 0,
@@ -198,6 +246,7 @@ const ProvideLoan = () => {
     setDbCustomerId('');
     setFormData({
       name: '', mobileNo: '', fatherHusbandName: '', address: '', loanDate: new Date().toISOString().slice(0, 10),
+      loanStartDate: new Date().toISOString().slice(0, 10), loanEndDate: '',
       loanAmount: '', remainingLoanAmount: '', status: 'Pending', totalNoOfDays: '', interestRate: '',
       additionalInterestRate: '', totalPaidInterestAmount: '', totalInterestPaidDays: '', remainingDays: '',
       remainingInterestAmount: '', documentCharge: '', fullSettlementAmount: '', enterDays: '',
@@ -285,7 +334,8 @@ const ProvideLoan = () => {
                 <div className={row}><span className={lbl}>Address :</span><textarea name="address" className={`${inp} resize-none`} rows="2" value={formData.address} onChange={handleChange} readOnly={!!dbCustomerId} /></div>
               </div>
               <div>
-                <div className={row}><span className={lbl}>Loan Date :</span><input type="date" name="loanDate" className={inp} value={formData.loanDate} onChange={handleChange} /></div>
+                <div className={row}><span className={lbl}>Loan Start Date :</span><input type="date" name="loanStartDate" className={inp} value={formData.loanStartDate} onChange={handleChange} required /></div>
+                <div className={row}><span className={lbl}>Loan End Date :</span><input type="date" name="loanEndDate" className={`${inp} bg-gray-100 cursor-not-allowed`} value={formData.loanEndDate} readOnly /></div>
                 <div className={row}><span className={lbl}>Loan Amount :</span><input type="text" name="loanAmount" className={inp} value={formData.loanAmount} onChange={handleChange} /></div>
                 <div className={row}><span className={lbl}>Remaining Loan Amount :</span><input type="text" name="remainingLoanAmount" className={inp} value={formData.remainingLoanAmount} onChange={handleChange} /></div>
                 <div className={row}><span className={lbl}>Status :</span>
@@ -614,219 +664,6 @@ const ProvideLoan = () => {
           </div>
         </div>
       )}
-=======
-import React, { useState, useRef } from 'react';
-import toast from 'react-hot-toast';
-import { Upload, Save, RefreshCcw } from 'lucide-react';
-import { saveLoan } from '../utils/loanStore';
-
-const emptyForm = {
-  // Customer Info
-  customerId: '', customerName: '', mobileNumber: '', aadhaarNo: '', address: '',
-  // Gold Info
-  ornamentType: '', ornamentCount: '', grossWeight: '', netWeight: '', stoneWeight: '', purity: '22K', goldRate: '', goldValue: '',
-  // Loan Info
-  loanDate: '', loanAmount: '', interestRate: '', loanPeriod: '', dueDate: '', processingFee: '', loanOfficer: '',
-  // Payment Info
-  disbursementMode: 'Cash', transactionRefNo: '', remarks: '',
-  // Status
-  status: 'Pending'
-};
-
-const ProvideLoan = () => {
-  const [formData, setFormData] = useState({ ...emptyForm });
-  const [files, setFiles] = useState({ customerPhoto: null, ornamentPhotos: null });
-
-  const customerPhotoRef = useRef(null);
-  const ornamentPhotosRef = useRef(null);
-
-  const handleInputChange = (e) => setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
-  const handleFileChange = (e, fileType) => e.target.files?.[0] && setFiles(prev => ({ ...prev, [fileType]: e.target.files[0] }));
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    const required = ['customerName', 'mobileNumber', 'ornamentType', 'grossWeight', 'loanAmount', 'interestRate'];
-    if (required.some(f => !formData[f])) return toast.error('Please fill in all required fields');
-    
-    saveLoan(formData);
-    toast.success('Loan created successfully!');
-    handleClear();
-  };
-
-  const handleClear = () => {
-    setFormData({ ...emptyForm });
-    setFiles({ customerPhoto: null, ornamentPhotos: null });
-    if (customerPhotoRef.current) customerPhotoRef.current.value = '';
-    if (ornamentPhotosRef.current) ornamentPhotosRef.current.value = '';
-  };
-
-  const inp = "w-full px-3 py-1.5 text-base bg-white border border-gray-300 shadow-sm rounded-md focus:ring-1 focus:ring-green-500 focus:border-green-500 transition-colors";
-  const lbl = "block text-sm font-semibold text-gray-700 mb-0.5";
-  const sectionTitle = "text-lg font-bold text-green-700 mb-3 border-b pb-1 mt-4";
-
-  return (
-    <div className="flex flex-col" style={{ height: 'calc(100vh - 100px)' }}>
-      {/* Title */}
-      <div className="mb-3 shrink-0">
-        <h2 className="text-2xl font-bold text-text-primary">Provide Loan</h2>
-        <p className="text-xs text-text-secondary mt-0.5">Fields marked with <span className="text-red-500">*</span> are required.</p>
-      </div>
-
-      {/* Form card */}
-      <div className="bg-white border border-gray-100 rounded-lg shadow-sm flex-1 flex flex-col overflow-hidden">
-        <div className="p-4 flex-1 overflow-auto">
-          <form id="provide-loan-form" onSubmit={handleSubmit} className="grid grid-cols-4 gap-x-5 gap-y-3">
-
-            {/* ── Customer Information ── */}
-            <div className="col-span-4"><h3 className={sectionTitle}>Customer Information</h3></div>
-            <div>
-              <label className={lbl}>Customer ID</label>
-              <input type="text" name="customerId" value={formData.customerId} onChange={handleInputChange} className={inp} />
-            </div>
-            <div>
-              <label className={lbl}>Customer Name <span className="text-red-500">*</span></label>
-              <input type="text" name="customerName" value={formData.customerName} onChange={handleInputChange} className={inp} required />
-            </div>
-            <div>
-              <label className={lbl}>Mobile Number <span className="text-red-500">*</span></label>
-              <input type="tel" name="mobileNumber" value={formData.mobileNumber} onChange={handleInputChange} className={inp} required />
-            </div>
-            <div>
-              <label className={lbl}>Aadhaar Number</label>
-              <input type="text" name="aadhaarNo" value={formData.aadhaarNo} onChange={handleInputChange} className={inp} />
-            </div>
-            <div className="col-span-2">
-              <label className={lbl}>Address</label>
-              <textarea name="address" value={formData.address} onChange={handleInputChange} rows="2" className={`${inp} resize-none`} />
-            </div>
-            <div className="col-span-2 pt-2">
-              <label className={lbl}>Customer Photo</label>
-              <div className="flex items-center gap-2">
-                <button type="button" onClick={() => customerPhotoRef.current.click()}
-                  className="flex items-center px-3 py-1.5 bg-white border border-gray-300 shadow-sm rounded-md text-xs font-medium text-gray-700 hover:bg-gray-50 shrink-0 transition-colors">
-                  <Upload className="w-3 h-3 mr-1" /> Browse
-                </button>
-                <span className="text-xs text-gray-500 truncate">{files.customerPhoto ? files.customerPhoto.name : 'No file'}</span>
-                <input type="file" ref={customerPhotoRef} onChange={e => handleFileChange(e, 'customerPhoto')} className="hidden" accept="image/*" />
-              </div>
-            </div>
-
-            {/* ── Gold Information ── */}
-            <div className="col-span-4"><h3 className={sectionTitle}>Gold Information</h3></div>
-            <div>
-              <label className={lbl}>Ornament Type <span className="text-red-500">*</span></label>
-              <input type="text" name="ornamentType" placeholder="Chain, Ring, etc." value={formData.ornamentType} onChange={handleInputChange} className={inp} required />
-            </div>
-            <div>
-              <label className={lbl}>Ornament Count</label>
-              <input type="number" name="ornamentCount" value={formData.ornamentCount} onChange={handleInputChange} className={inp} />
-            </div>
-            <div>
-              <label className={lbl}>Gross Weight (g) <span className="text-red-500">*</span></label>
-              <input type="number" step="0.01" name="grossWeight" value={formData.grossWeight} onChange={handleInputChange} className={inp} required />
-            </div>
-            <div>
-              <label className={lbl}>Net Weight (g)</label>
-              <input type="number" step="0.01" name="netWeight" value={formData.netWeight} onChange={handleInputChange} className={inp} />
-            </div>
-            <div>
-              <label className={lbl}>Stone Weight (g)</label>
-              <input type="number" step="0.01" name="stoneWeight" value={formData.stoneWeight} onChange={handleInputChange} className={inp} />
-            </div>
-            <div>
-              <label className={lbl}>Purity</label>
-              <select name="purity" value={formData.purity} onChange={handleInputChange} className={inp}>
-                <option value="18K">18K</option>
-                <option value="22K">22K</option>
-                <option value="24K">24K</option>
-              </select>
-            </div>
-            <div>
-              <label className={lbl}>Gold Rate (Today)</label>
-              <input type="number" step="0.01" name="goldRate" value={formData.goldRate} onChange={handleInputChange} className={inp} />
-            </div>
-            <div>
-              <label className={lbl}>Gold Value</label>
-              <input type="number" step="0.01" name="goldValue" value={formData.goldValue} onChange={handleInputChange} className={inp} />
-            </div>
-            <div className="col-span-4 pt-2">
-              <label className={lbl}>Ornament Photos</label>
-              <div className="flex items-center gap-2">
-                <button type="button" onClick={() => ornamentPhotosRef.current.click()}
-                  className="flex items-center px-3 py-1.5 bg-white border border-gray-300 shadow-sm rounded-md text-xs font-medium text-gray-700 hover:bg-gray-50 shrink-0 transition-colors">
-                  <Upload className="w-3 h-3 mr-1" /> Browse
-                </button>
-                <span className="text-xs text-gray-500 truncate">{files.ornamentPhotos ? files.ornamentPhotos.name : 'No file'}</span>
-                <input type="file" ref={ornamentPhotosRef} onChange={e => handleFileChange(e, 'ornamentPhotos')} className="hidden" accept="image/*" multiple />
-              </div>
-            </div>
-
-            {/* ── Loan Information ── */}
-            <div className="col-span-4"><h3 className={sectionTitle}>Loan Information</h3></div>
-            <div>
-              <label className={lbl}>Loan Date</label>
-              <input type="date" name="loanDate" value={formData.loanDate} onChange={handleInputChange} className={inp} />
-            </div>
-            <div>
-              <label className={lbl}>Loan Amount <span className="text-red-500">*</span></label>
-              <input type="number" name="loanAmount" value={formData.loanAmount} onChange={handleInputChange} className={inp} required />
-            </div>
-            <div>
-              <label className={lbl}>Interest Rate (%) <span className="text-red-500">*</span></label>
-              <input type="number" step="0.01" name="interestRate" value={formData.interestRate} onChange={handleInputChange} className={inp} required />
-            </div>
-            <div>
-              <label className={lbl}>Loan Period (Months)</label>
-              <input type="number" name="loanPeriod" value={formData.loanPeriod} onChange={handleInputChange} className={inp} />
-            </div>
-            <div>
-              <label className={lbl}>Due Date</label>
-              <input type="date" name="dueDate" value={formData.dueDate} onChange={handleInputChange} className={inp} />
-            </div>
-            <div>
-              <label className={lbl}>Processing Fee</label>
-              <input type="number" name="processingFee" value={formData.processingFee} onChange={handleInputChange} className={inp} />
-            </div>
-            <div className="col-span-2">
-              <label className={lbl}>Loan Officer</label>
-              <input type="text" name="loanOfficer" value={formData.loanOfficer} onChange={handleInputChange} className={inp} />
-            </div>
-
-            {/* ── Payment Information ── */}
-            <div className="col-span-4"><h3 className={sectionTitle}>Payment Information</h3></div>
-            <div>
-              <label className={lbl}>Disbursement Mode</label>
-              <select name="disbursementMode" value={formData.disbursementMode} onChange={handleInputChange} className={inp}>
-                <option value="Cash">Cash</option>
-                <option value="UPI">UPI</option>
-                <option value="Bank Transfer">Bank Transfer</option>
-              </select>
-            </div>
-            <div>
-              <label className={lbl}>Transaction Reference No</label>
-              <input type="text" name="transactionRefNo" value={formData.transactionRefNo} onChange={handleInputChange} className={inp} />
-            </div>
-            <div className="col-span-2">
-              <label className={lbl}>Remarks</label>
-              <input type="text" name="remarks" value={formData.remarks} onChange={handleInputChange} className={inp} />
-            </div>
-
-          </form>
-        </div>
-
-        {/* ── Bottom Action Bar ── */}
-        <div className="shrink-0 px-4 py-3 border-t border-gray-100 bg-gray-50 rounded-b-lg flex items-center gap-3">
-          <button form="provide-loan-form" type="submit"
-            className="flex items-center gap-2 px-6 py-2 bg-gradient-to-r from-green-600 to-green-700 text-white text-sm font-semibold rounded-lg hover:from-green-700 hover:to-green-800 focus:ring-2 focus:ring-green-500/30 transition-all shadow-sm">
-            <Save className="w-4 h-4" /> Save Loan
-          </button>
-          <button type="button" onClick={handleClear}
-            className="flex items-center gap-2 px-5 py-2 bg-white border border-gray-200 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-100 transition-all">
-            <RefreshCcw className="w-4 h-4" /> Clear
-          </button>
-        </div>
-      </div>
->>>>>>> bc349fb706e4bcd8458de02e4c1318f493c3b4b6
     </div>
   );
 };

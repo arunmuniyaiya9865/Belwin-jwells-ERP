@@ -6,7 +6,6 @@ const goldStockSchema = new mongoose.Schema({
   loanId: { type: String, required: true, index: true },
   customerId: { type: String, required: true },
   customerName: { type: String, required: true },
-  branchName: { type: String, default: 'Head Office' }, // Defaulting to HO if not passed
   articleName: { type: String, required: true },
   articleType: { type: String, required: true },
   quantity: { type: Number, required: true },

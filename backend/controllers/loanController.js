@@ -16,6 +16,8 @@ const createLoan = async (req, res) => {
       fatherHusbandName,
       address,
       loanDate,
+      loanStartDate,
+      loanEndDate,
       loanAmount,
       remainingLoanAmount,
       status,
@@ -32,7 +34,18 @@ const createLoan = async (req, res) => {
       articles,
       totalWt,
       payments,
-      repledgeDetails
+      repledgeDetails,
+      schemeId,
+      schemeName,
+      employeeId,
+      employeeName,
+      interestPercent,
+      gramRate,
+      minimumGram,
+      maturePeriod,
+      interestRepaymentMonths,
+      documentCharges,
+      penaltyPercent
     } = req.body;
 
     let customerStringId = '';
@@ -72,6 +85,8 @@ const createLoan = async (req, res) => {
       fatherHusbandName,
       address,
       loanDate,
+      loanStartDate,
+      loanEndDate,
       loanAmount,
       remainingLoanAmount,
       status: status || 'Pending',
@@ -88,7 +103,18 @@ const createLoan = async (req, res) => {
       articles,
       totalWt,
       payments,
-      repledgeDetails
+      repledgeDetails,
+      schemeId,
+      schemeName,
+      employeeId,
+      employeeName,
+      interestPercent,
+      gramRate,
+      minimumGram,
+      maturePeriod,
+      interestRepaymentMonths,
+      documentCharges,
+      penaltyPercent
     });
 
     // --- AUTOMATED GOLD STOCK LEDGER CREATION ---
@@ -98,7 +124,6 @@ const createLoan = async (req, res) => {
           loanId: newLoan.loanId,
           customerId: newLoan.customerId,
           customerName: newLoan.name,
-          // branchName is optional/defaulted
           articleName: article.category || 'Unknown',
           articleType: article.details || 'Unknown',
           quantity: article.qty || 1,

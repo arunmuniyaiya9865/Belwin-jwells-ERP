@@ -1,6 +1,5 @@
 const express = require('express');
 const router = express.Router();
-<<<<<<< HEAD
 const Followup = require('../models/Followup');
 
 router.post('/', async (req, res) => {
@@ -21,15 +20,5 @@ router.get('/', async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 });
-=======
-const {
-    createFollowup,
-    getFollowups
-} = require('../controllers/followupController');
-
-router.route('/')
-    .get(getFollowups)
-    .post(createFollowup);
->>>>>>> bc349fb706e4bcd8458de02e4c1318f493c3b4b6
 
 module.exports = router;

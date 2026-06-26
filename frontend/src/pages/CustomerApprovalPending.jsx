@@ -1,19 +1,12 @@
-<<<<<<< HEAD
 import React, { useState, useEffect } from 'react';
 import { Search, Calendar, FilterX, ChevronDown, X, User, Banknote, FileText, CheckCircle2, ShieldAlert, MapPin, Phone } from 'lucide-react';
 import { getPendingCustomers, approveCustomerByApprovalId, rejectCustomerByApprovalId } from '../services/customerService';
 import toast from 'react-hot-toast';
-=======
-import React, { useState } from 'react';
-import { Search, Calendar, FilterX, ChevronDown, X, User, Banknote, FileText, CheckCircle2, ShieldAlert, MapPin, Phone } from 'lucide-react';
-import { searchCustomers } from '../utils/customerStore';
->>>>>>> bc349fb706e4bcd8458de02e4c1318f493c3b4b6
 
 const CustomerApprovalPending = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [results, setResults] = useState([]);
   const [selectedCustomer, setSelectedCustomer] = useState(null);
-<<<<<<< HEAD
   const [pendingCustomers, setPendingCustomers] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -41,13 +34,10 @@ const CustomerApprovalPending = () => {
     setSearchQuery('');
   }, [pendingCustomers]);
 
-=======
->>>>>>> bc349fb706e4bcd8458de02e4c1318f493c3b4b6
   const handleSearch = (e) => {
     const q = e.target.value;
     setSearchQuery(q);
     if (q.trim()) {
-<<<<<<< HEAD
       const filtered = pendingCustomers.filter(c => 
         (c.customerId && c.customerId.toLowerCase().includes(q.toLowerCase())) ||
         (c.customerName && c.customerName.toLowerCase().includes(q.toLowerCase())) ||
@@ -56,11 +46,6 @@ const CustomerApprovalPending = () => {
       setResults(filtered);
     } else {
       setResults(pendingCustomers);
-=======
-      setResults(searchCustomers(q));
-    } else {
-      setResults([]);
->>>>>>> bc349fb706e4bcd8458de02e4c1318f493c3b4b6
     }
   };
 
@@ -68,7 +53,6 @@ const CustomerApprovalPending = () => {
     return name ? name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() : '??';
   };
 
-<<<<<<< HEAD
   const handleApprove = async () => {
     if (!selectedCustomer) return;
     const confirmApprove = window.confirm(`Are you sure you want to approve customer ${selectedCustomer.customerName}?`);
@@ -113,8 +97,6 @@ const CustomerApprovalPending = () => {
     }
   };
 
-=======
->>>>>>> bc349fb706e4bcd8458de02e4c1318f493c3b4b6
   // Status badge component
   const StatusBadge = ({ status }) => {
     if (status === 'Approved') {
@@ -154,12 +136,7 @@ const CustomerApprovalPending = () => {
               className="w-full pl-9 pr-3 py-2 text-sm bg-white border border-gray-300 rounded-md focus:ring-1 focus:ring-green-500 focus:border-green-500 transition-colors"
             />
           </div>
-          <div className="relative">
-            <select className="appearance-none pl-3 pr-8 py-2 text-sm bg-white border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-green-500 cursor-pointer">
-              <option>Branch: All</option>
-            </select>
-            <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
-          </div>
+
           <button className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50">
             <Calendar className="w-4 h-4" /> Date Range
           </button>
@@ -181,7 +158,6 @@ const CustomerApprovalPending = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
-<<<<<<< HEAD
               {loading ? (
                 <tr>
                   <td colSpan="5" className="px-6 py-12 text-center text-sm text-gray-500">
@@ -195,25 +171,13 @@ const CustomerApprovalPending = () => {
                 <tr>
                   <td colSpan="5" className="px-6 py-12 text-center text-sm text-gray-500">
                     {searchQuery.trim() ? "No customers match your search." : "No pending customer approvals."}
-=======
-              {results.length === 0 ? (
-                <tr>
-                  <td colSpan="5" className="px-6 py-12 text-center text-sm text-gray-500">
-                    {searchQuery.trim() ? "No customers match your search." : "Search for a customer ID to view details."}
->>>>>>> bc349fb706e4bcd8458de02e4c1318f493c3b4b6
                   </td>
                 </tr>
               ) : (
                 results.map(c => (
-<<<<<<< HEAD
                   <tr key={c.customerId || c._id} onClick={() => setSelectedCustomer(c)} className="hover:bg-gray-50 transition-colors cursor-pointer">
                     <td className="px-6 py-4">
                       <div className="text-sm font-bold text-gray-800">#{c.customerId}</div>
-=======
-                  <tr key={c.id} onClick={() => setSelectedCustomer(c)} className="hover:bg-gray-50 transition-colors cursor-pointer">
-                    <td className="px-6 py-4">
-                      <div className="text-sm font-bold text-gray-800">#{c.id}</div>
->>>>>>> bc349fb706e4bcd8458de02e4c1318f493c3b4b6
                       <div className="text-xs text-gray-400 mt-0.5">Application</div>
                     </td>
                     <td className="px-6 py-4">
@@ -262,11 +226,7 @@ const CustomerApprovalPending = () => {
             <div className="flex items-center justify-between p-5 border-b border-gray-200">
               <div>
                 <h2 className="text-lg font-bold text-gray-800">Application Detail</h2>
-<<<<<<< HEAD
                 <p className="text-sm text-gray-500">Loan ID: #{selectedCustomer.customerId}</p>
-=======
-                <p className="text-sm text-gray-500">Loan ID: #{selectedCustomer.id}</p>
->>>>>>> bc349fb706e4bcd8458de02e4c1318f493c3b4b6
               </div>
               <div className="flex items-center gap-3">
                 {/* Status badge in slide-over header — reflects admin approval */}
@@ -291,7 +251,6 @@ const CustomerApprovalPending = () => {
                 </div>
                 <div className="bg-white border border-gray-200 rounded-xl p-4 flex gap-4 shadow-sm">
                   <div className="w-[72px] h-[72px] bg-green-100 rounded-lg flex items-center justify-center shrink-0 overflow-hidden">
-<<<<<<< HEAD
                     {/* Live photo preview if available in the database */}
                     {selectedCustomer.customerPhotoUrl ? (
                       <img src={selectedCustomer.customerPhotoUrl} className="w-full h-full object-cover" alt="" />
@@ -302,22 +261,11 @@ const CustomerApprovalPending = () => {
                   <div className="flex flex-col justify-center">
                     <h3 className="font-bold text-gray-900 text-base">{selectedCustomer.customerName}</h3>
                     <p className="text-xs text-gray-500 mt-1 font-medium">Gdn: {selectedCustomer.guardianName || selectedCustomer.guardian || 'N/A'}</p>
-=======
-                    <div className="text-2xl font-bold text-green-700">{getInitials(selectedCustomer.customerName)}</div>
-                  </div>
-                  <div className="flex flex-col justify-center">
-                    <h3 className="font-bold text-gray-900 text-base">{selectedCustomer.customerName}</h3>
-                    <p className="text-xs text-gray-500 mt-1 font-medium">Gdn: {selectedCustomer.guardian || 'N/A'}</p>
->>>>>>> bc349fb706e4bcd8458de02e4c1318f493c3b4b6
                     <div className="flex items-center gap-1.5 text-xs text-gray-600 mt-1.5">
                       <Phone className="w-3.5 h-3.5" /> +91 {selectedCustomer.mobileNumber}
                     </div>
                     <div className="flex items-center gap-1.5 text-xs text-gray-600 mt-1">
-<<<<<<< HEAD
                       <MapPin className="w-3.5 h-3.5" /> {selectedCustomer.doorStreet || selectedCustomer.doorNo}, {selectedCustomer.city} - {selectedCustomer.postalCode}
-=======
-                      <MapPin className="w-3.5 h-3.5" /> {selectedCustomer.doorNo}, {selectedCustomer.city} - {selectedCustomer.postalCode}
->>>>>>> bc349fb706e4bcd8458de02e4c1318f493c3b4b6
                     </div>
                   </div>
                 </div>
@@ -332,7 +280,6 @@ const CustomerApprovalPending = () => {
                 <div className="grid grid-cols-2 gap-3 mb-3">
                   <div className="bg-white border border-gray-200 rounded-xl p-3 shadow-sm">
                     <p className="text-[10px] font-bold text-gray-400 mb-1 uppercase tracking-wider">Requested Amount</p>
-<<<<<<< HEAD
                     <p className="text-base font-bold text-green-800">₹4,50,000</p>
                   </div>
                   <div className="bg-white border border-gray-200 rounded-xl p-3 shadow-sm">
@@ -346,30 +293,19 @@ const CustomerApprovalPending = () => {
                   <div className="bg-white border border-gray-200 rounded-xl p-3 shadow-sm">
                     <p className="text-[10px] font-bold text-gray-400 mb-1 uppercase tracking-wider">Tenure</p>
                     <p className="text-base font-bold text-gray-900">12 Months</p>
-=======
-                    <p className="text-base font-bold text-green-800">₹{selectedCustomer.requestedAmount || '0'}</p>
                   </div>
                   <div className="bg-white border border-gray-200 rounded-xl p-3 shadow-sm">
-                    <p className="text-[10px] font-bold text-gray-400 mb-1 uppercase tracking-wider">Scheme</p>
-                    <p className="text-base font-bold text-gray-900">{selectedCustomer.scheme || '0'}</p>
+                    <p className="text-[10px] font-bold text-gray-400 mb-1 uppercase tracking-wider">Loan Start Date</p>
+                    <p className="text-base font-bold text-gray-900">15-06-2026</p>
                   </div>
                   <div className="bg-white border border-gray-200 rounded-xl p-3 shadow-sm">
-                    <p className="text-[10px] font-bold text-gray-400 mb-1 uppercase tracking-wider">Collateral Weight</p>
-                    <p className="text-base font-bold text-gray-900">{selectedCustomer.collateralWeight || '0'}</p>
-                  </div>
-                  <div className="bg-white border border-gray-200 rounded-xl p-3 shadow-sm">
-                    <p className="text-[10px] font-bold text-gray-400 mb-1 uppercase tracking-wider">Tenure</p>
-                    <p className="text-base font-bold text-gray-900">{selectedCustomer.tenure || '0'}</p>
->>>>>>> bc349fb706e4bcd8458de02e4c1318f493c3b4b6
+                    <p className="text-[10px] font-bold text-gray-400 mb-1 uppercase tracking-wider">Loan End Date</p>
+                    <p className="text-base font-bold text-gray-900">15-06-2027</p>
                   </div>
                 </div>
                 <div className="bg-gray-100 rounded-xl p-3 border border-gray-50">
                   <p className="text-[10px] font-bold text-gray-500 mb-1 uppercase tracking-wider">Items Description</p>
-<<<<<<< HEAD
                   <p className="text-xs text-gray-600 italic">2x Gold Chains (Fine link), 1x Heavy Bracelet (Handmade)</p>
-=======
-                  <p className="text-xs text-gray-600 italic">{selectedCustomer.itemsDescription || '0'}</p>
->>>>>>> bc349fb706e4bcd8458de02e4c1318f493c3b4b6
                 </div>
               </div>
 
@@ -387,7 +323,6 @@ const CustomerApprovalPending = () => {
                     </div>
                     <span className="text-[10px] font-bold text-green-700 tracking-wider">VERIFIED</span>
                   </div>
-<<<<<<< HEAD
                   <div className="bg-white border border-gray-200 rounded-lg p-3 flex items-center justify-between shadow-sm">
                     <div className="flex items-center gap-3">
                       <CheckCircle2 className="w-5 h-5 text-green-600" />
@@ -395,9 +330,6 @@ const CustomerApprovalPending = () => {
                     </div>
                     <span className="text-[10px] font-bold text-green-700 tracking-wider">VERIFIED</span>
                   </div>
-=======
-
->>>>>>> bc349fb706e4bcd8458de02e4c1318f493c3b4b6
                   <div className="bg-[#fff9eb] border border-[#e5c587] rounded-lg p-3 flex items-center justify-between shadow-sm">
                     <div className="flex items-center gap-3">
                       <div className="w-5 h-5 rounded-full border-[1.5px] border-amber-700 flex items-center justify-center">
@@ -436,7 +368,6 @@ const CustomerApprovalPending = () => {
 
             {/* Footer Buttons */}
             <div className="p-4 border-t border-gray-200 bg-gray-50 flex gap-3">
-<<<<<<< HEAD
               <button 
                 onClick={handleReject}
                 className="flex-1 py-2.5 bg-white border border-red-300 text-red-700 font-bold text-sm rounded-lg hover:bg-red-50 transition-colors"
@@ -448,13 +379,6 @@ const CustomerApprovalPending = () => {
                 className="flex-1 py-2.5 bg-green-600 hover:bg-green-700 text-white font-bold text-sm rounded-lg transition-colors"
               >
                 Approve Customer
-=======
-              <button className="flex-1 py-2.5 bg-white border border-gray-300 text-gray-700 font-bold text-sm rounded-lg hover:bg-gray-50 transition-colors">
-                Request Clarification
-              </button>
-              <button className="flex-1 py-2.5 bg-gray-100 text-gray-400 font-bold text-sm rounded-lg border border-gray-200 cursor-not-allowed" disabled>
-                Pending Admin Approval
->>>>>>> bc349fb706e4bcd8458de02e4c1318f493c3b4b6
               </button>
             </div>
           </div>

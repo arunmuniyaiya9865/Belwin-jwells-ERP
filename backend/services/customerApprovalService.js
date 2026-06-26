@@ -3,7 +3,7 @@ const { Customer } = require('../models/Customer');
 /**
  * Requirement 1: Search Customer by ID and Branch
  */
-const findCustomerForApproval = async (customerId, branchId, user) => {
+const findCustomerForApproval = async (customerId, user) => {
     // 1. Basic validation (Requirement 4: Check whitespace)
     if (!customerId) {
         throw { status: 400, message: 'Invalid customerId' };
@@ -20,11 +20,6 @@ const findCustomerForApproval = async (customerId, branchId, user) => {
     });
 
     console.log("Customer found in DB:", !!customer);
-    if (customer) {
-        console.log("Customer Branch:", customer.branchId);
-        console.log("Search Branch (Received):", branchId);
-    }
-
     if (!customer) {
         // Detailed error for debugging (Requirement 11)
         throw { 
@@ -33,38 +28,17 @@ const findCustomerForApproval = async (customerId, branchId, user) => {
             debug: {
                 customerIdReceived: customerId,
                 cleanId,
-                branchReceived: branchId,
                 customerFound: false
             }
         };
     }
 
-    // 3. Branch Security (Requirement 4 & 6)
-    // admin can access all, employee only their branch
-    if (user.role !== 'admin') {
-        // If branchId is missing in record, treat as matching 'Main Branch' as fallback for legacy
-        const effectiveBranch = customer.branchId || 'Main Branch';
-        const targetBranch = branchId || 'Main Branch';
-
-        if (effectiveBranch !== targetBranch) {
-             console.log(`Branch Mismatch: DB[${effectiveBranch}] vs Query[${targetBranch}]`);
-             throw { 
-                 status: 403, 
-                 message: 'Branch access denied',
-                 debug: {
-                     customerBranch: effectiveBranch,
-                     userBranch: targetBranch,
-                     role: user.role
-                 }
-             };
-        }
-    }
+    // 3. Branch Security Removed
 
     return {
         customerId:     customer.customerId,
         customerName:   customer.customerName,
         mobile:         customer.mobileNumber,
-        branch:         customer.branchId || 'Main Branch',
         employee:       customer.createdBy ? 'Assigned' : 'Unassigned',
         createdAt:      customer.createdAt,
         kycStatus:      customer.status, // Existing status enum

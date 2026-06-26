@@ -3,12 +3,8 @@ import toast from 'react-hot-toast';
 
 const AddDenomination = () => {
   const [formData, setFormData] = useState({
-<<<<<<< HEAD
     denominationId: '',
-=======
->>>>>>> bc349fb706e4bcd8458de02e4c1318f493c3b4b6
     entryDate: new Date().toISOString().split('T')[0],
-    branchName: '',
     cashInHandTotal: '',
     notes500: '',
     notes200: '',
@@ -26,7 +22,6 @@ const AddDenomination = () => {
   const [grandTotal, setGrandTotal] = useState(0);
   const [loading, setLoading] = useState(false);
 
-<<<<<<< HEAD
   useEffect(() => {
     fetchNextId();
   }, []);
@@ -43,8 +38,6 @@ const AddDenomination = () => {
     }
   };
 
-=======
->>>>>>> bc349fb706e4bcd8458de02e4c1318f493c3b4b6
   // Auto-calculate Grand Total
   useEffect(() => {
     const total = 
@@ -95,12 +88,8 @@ const AddDenomination = () => {
         toast.success('Denomination verified and saved successfully!');
         // Reset form but keep date
         setFormData({
-<<<<<<< HEAD
           denominationId: '',
-=======
->>>>>>> bc349fb706e4bcd8458de02e4c1318f493c3b4b6
           entryDate: new Date().toISOString().split('T')[0],
-          branchName: '',
           cashInHandTotal: '',
           notes500: '',
           notes200: '',
@@ -114,10 +103,7 @@ const AddDenomination = () => {
           verifiedTime: '',
           remarks: ''
         });
-<<<<<<< HEAD
         fetchNextId();
-=======
->>>>>>> bc349fb706e4bcd8458de02e4c1318f493c3b4b6
       } else {
         toast.error(data.message || 'Failed to save denomination');
       }
@@ -145,23 +131,16 @@ const AddDenomination = () => {
             {/* Core Details */}
             <div>
               <h3 className="text-lg font-semibold text-gray-800 mb-4 pb-2 border-b">Core Details</h3>
-<<<<<<< HEAD
               <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Denomination ID <span className="text-red-500">*</span></label>
                   <input required type="text" name="denominationId" value={formData.denominationId} readOnly className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-erp-green bg-gray-100" />
                 </div>
-=======
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
->>>>>>> bc349fb706e4bcd8458de02e4c1318f493c3b4b6
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Entry Date <span className="text-red-500">*</span></label>
                   <input required type="date" name="entryDate" value={formData.entryDate} onChange={handleChange} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-erp-green" />
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Branch Name <span className="text-red-500">*</span></label>
-                  <input required type="text" name="branchName" value={formData.branchName} onChange={handleChange} placeholder="Main Branch" className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-erp-green" />
-                </div>
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Cash In Hand Total (System) <span className="text-red-500">*</span></label>
                   <input required type="number" name="cashInHandTotal" value={formData.cashInHandTotal} onChange={handleChange} placeholder="0" className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-erp-green font-bold text-blue-700 bg-blue-50" />
