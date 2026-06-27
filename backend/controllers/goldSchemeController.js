@@ -1,7 +1,8 @@
+const ApiError = require('../utils/ApiError');
 const GoldScheme = require('../models/GoldScheme');
 const { Customer } = require('../models/Customer');
 
-exports.createGoldScheme = async (req, res) => {
+exports.createGoldScheme = async (req, res, next) => {
     try {
         const {
             customerId,
@@ -16,7 +17,7 @@ exports.createGoldScheme = async (req, res) => {
             penaltyPercent,
         } = req.body;
 
-        if (!customerId) return res.status(400).json({ message: "Customer ID is required" });
+        if (!customerId) return next(new ApiError(400, "Customer ID is required" ));
 
         const mongoose = require('mongoose');
         const isValidObjectId = mongoose.Types.ObjectId.isValid(customerId);
@@ -26,14 +27,14 @@ exports.createGoldScheme = async (req, res) => {
             : { customerId: customerId };
 
         const customer = await Customer.findOne(query);
-        if (!customer) return res.status(404).json({ message: "Customer not found" });
+        if (!customer) return next(new ApiError(404, "Customer not found" ));
 
         const existingScheme = await GoldScheme.findOne({ 
             customerId: customer.customerId || customer._id, 
             status: "Active" 
         });
         if (existingScheme) {
-            return res.status(400).json({ message: "Customer already has an active Gold Scheme" });
+            return next(new ApiError(400, "Customer already has an active Gold Scheme" ));
         }
 
         // Get Employee info from token (or fallback if using guestUser middleware)
@@ -62,48 +63,48 @@ exports.createGoldScheme = async (req, res) => {
         await newScheme.save();
         res.status(201).json({ message: "Gold Scheme created successfully", scheme: newScheme });
     } catch (error) {
-        res.status(500).json({ message: "Error creating Gold Scheme", error: error.message });
+        next(new ApiError(500, "Error creating Gold Scheme"));
     }
 };
 
-exports.getGoldSchemes = async (req, res) => {
+exports.getGoldSchemes = async (req, res, next) => {
     try {
         const schemes = await GoldScheme.find().sort({ createdAt: -1 });
         res.status(200).json(schemes);
     } catch (error) {
-        res.status(500).json({ message: "Error fetching schemes", error: error.message });
+        next(new ApiError(500, "Error fetching schemes"));
     }
 };
 
-exports.getGoldSchemeByCustomer = async (req, res) => {
+exports.getGoldSchemeByCustomer = async (req, res, next) => {
     try {
         const { customerId } = req.params;
         const scheme = await GoldScheme.findOne({ customerId, status: 'Active' });
         if (!scheme) {
-            return res.status(404).json({ message: "No Active Gold Scheme Found" });
+            return next(new ApiError(404, "No Active Gold Scheme Found" ));
         }
         res.status(200).json(scheme);
     } catch (error) {
-        res.status(500).json({ message: "Error fetching scheme", error: error.message });
+        next(new ApiError(500, "Error fetching scheme"));
     }
 };
 
-exports.updateGoldScheme = async (req, res) => {
+exports.updateGoldScheme = async (req, res, next) => {
     try {
         const scheme = await GoldScheme.findByIdAndUpdate(req.params.id, req.body, { new: true });
-        if (!scheme) return res.status(404).json({ message: "Scheme not found" });
+        if (!scheme) return next(new ApiError(404, "Scheme not found" ));
         res.status(200).json({ message: "Scheme updated", scheme });
     } catch (error) {
-        res.status(500).json({ message: "Error updating scheme", error: error.message });
+        next(new ApiError(500, "Error updating scheme"));
     }
 };
 
-exports.deleteGoldScheme = async (req, res) => {
+exports.deleteGoldScheme = async (req, res, next) => {
     try {
         const scheme = await GoldScheme.findByIdAndDelete(req.params.id);
-        if (!scheme) return res.status(404).json({ message: "Scheme not found" });
+        if (!scheme) return next(new ApiError(404, "Scheme not found" ));
         res.status(200).json({ message: "Scheme deleted successfully" });
     } catch (error) {
-        res.status(500).json({ message: "Error deleting scheme", error: error.message });
+        next(new ApiError(500, "Error deleting scheme"));
     }
 };

@@ -1,10 +1,11 @@
+const ApiError = require('../utils/ApiError');
 const { Customer } = require('../models/Customer');
 const Loan = require('../models/Loan');
 const Payment = require('../models/Payment');
 const Repledge = require('../models/Repledge');
 const Topup = require('../models/topupModel');
 
-exports.getCustomerHistory = async (req, res) => {
+exports.getCustomerHistory = async (req, res, next) => {
     try {
         const { customerId } = req.params;
 
@@ -18,7 +19,7 @@ exports.getCustomerHistory = async (req, res) => {
         }
 
         if (!customer) {
-            return res.status(404).json({ success: false, message: 'Customer not found' });
+            return next(new ApiError(404, 'Customer not found' ));
         }
 
         // We use the string customerId to fetch relations as seen in other models
@@ -45,6 +46,6 @@ exports.getCustomerHistory = async (req, res) => {
         });
     } catch (error) {
         console.error('Error fetching customer history:', error);
-        return res.status(500).json({ success: false, message: error.message });
+        return next(new ApiError(500, error.message ));
     }
 };

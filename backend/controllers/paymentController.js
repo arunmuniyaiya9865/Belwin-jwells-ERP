@@ -1,3 +1,4 @@
+const ApiError = require('../utils/ApiError');
 const Payment = require('../models/Payment');
 const Loan = require('../models/Loan');
 const { syncGoldStockStatus } = require('./goldStockController');
@@ -5,7 +6,7 @@ const { syncGoldStockStatus } = require('./goldStockController');
 // @desc    Create new payment and update loan
 // @route   POST /api/payments
 // @access  Public
-const createPayment = async (req, res) => {
+const createPayment = async (req, res, next) => {
   try {
     const {
       loanId,
@@ -24,17 +25,17 @@ const createPayment = async (req, res) => {
 
     // Validate payment amount
     if (!paymentAmount || paymentAmount <= 0) {
-      return res.status(400).json({ message: 'Payment amount must be greater than 0' });
+      return next(new ApiError(400, 'Payment amount must be greater than 0' ));
     }
 
     // Fetch loan using loanId string
     const loan = await Loan.findOne({ loanId });
     if (!loan) {
-      return res.status(404).json({ message: 'Loan not found' });
+      return next(new ApiError(404, 'Loan not found' ));
     }
 
     if (loan.status === 'Closed') {
-      return res.status(400).json({ message: 'Cannot process payment for a Closed loan' });
+      return next(new ApiError(400, 'Cannot process payment for a Closed loan' ));
     }
 
     // Process loan updates
@@ -48,7 +49,7 @@ const createPayment = async (req, res) => {
     
     // Check overpayment (if principal paid > remaining)
     if (newRemainingAmount < 0) {
-       return res.status(400).json({ message: 'Payment principal exceeds remaining loan amount' });
+       return next(new ApiError(400, 'Payment principal exceeds remaining loan amount' ));
     }
 
     // Create payment record
@@ -85,7 +86,9 @@ const createPayment = async (req, res) => {
     // Check closure logic
     if (loan.remainingLoanAmount <= 0) {
       loan.status = 'Closed';
-      // Store close date in remarks or if schema supports it, status handles it.
+      if (!loan.loanEndDate) {
+        loan.loanEndDate = new Date();
+      }
     }
 
     await loan.save();
@@ -93,58 +96,46 @@ const createPayment = async (req, res) => {
     await syncGoldStockStatus(loan.loanId, loan.status);
 
     res.status(201).json({ payment, loan });
-  } catch (error) {
-    console.error('Error processing payment:', error);
-    res.status(500).json({ message: 'Server Error', error: error.message });
-  }
+  } catch (error) { next(error); }
 };
 
 // @desc    Get all payments for a specific loan
 // @route   GET /api/payments/loan/:loanId
 // @access  Public
-const getPaymentsByLoan = async (req, res) => {
+const getPaymentsByLoan = async (req, res, next) => {
   try {
     const { loanId } = req.params;
     const payments = await Payment.find({ loanId }).sort({ paymentDate: -1, createdAt: -1 });
     res.json(payments);
-  } catch (error) {
-    console.error('Error fetching payments:', error);
-    res.status(500).json({ message: 'Server Error', error: error.message });
-  }
+  } catch (error) { next(error); }
 };
 
 // @desc    Get aggregated loan and payment history
 // @route   GET /api/payments/history/:loanId
 // @access  Public
-const getPaymentHistory = async (req, res) => {
+const getPaymentHistory = async (req, res, next) => {
   try {
     const { loanId } = req.params;
     
     const loan = await Loan.findOne({ loanId }).populate('customerObjectId');
     if (!loan) {
-      return res.status(404).json({ message: 'Loan not found' });
+      return next(new ApiError(404, 'Loan not found' ));
     }
 
     const payments = await Payment.find({ loanId }).sort({ paymentDate: -1, createdAt: -1 });
 
     res.json({ loan, payments });
-  } catch (error) {
-    console.error('Error fetching payment history:', error);
-    res.status(500).json({ message: 'Server Error', error: error.message });
-  }
+  } catch (error) { next(error); }
 };
 
 // @desc    Get all payments (global ledger)
 // @route   GET /api/payments
 // @access  Public
-const getAllPayments = async (req, res) => {
+const getAllPayments = async (req, res, next) => {
   try {
     const payments = await Payment.find().sort({ paymentDate: -1, createdAt: -1 });
     res.json(payments);
-  } catch (error) {
-    console.error('Error fetching all payments:', error);
-    res.status(500).json({ message: 'Server Error', error: error.message });
-  }
+  } catch (error) { next(error); }
 };
 
 module.exports = {

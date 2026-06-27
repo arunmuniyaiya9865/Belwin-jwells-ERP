@@ -1,3 +1,4 @@
+const ApiError = require('../utils/ApiError');
 const Loan = require('../models/Loan');
 const Payment = require('../models/Payment');
 const TopUp = require('../models/topupModel');
@@ -13,7 +14,7 @@ const GoldStock = require('../models/GoldStock');
 // @desc    Get Daily Summary Report
 // @route   GET /api/reports/daily-summary
 // @access  Public
-const getDailySummary = async (req, res) => {
+const getDailySummary = async (req, res, next) => {
   try {
     const queryDate = req.query.date ? new Date(req.query.date) : new Date();
     
@@ -66,16 +67,13 @@ const getDailySummary = async (req, res) => {
       totalRepledgesCount,
       closedLoansCount
     });
-  } catch (error) {
-    console.error('Error generating daily summary report:', error);
-    res.status(500).json({ message: 'Server Error', error: error.message });
-  }
+  } catch (error) { next(error); }
 };
 
 // @desc    Get Loan Report
 // @route   GET /api/reports/loan-report
 // @access  Public
-const getLoanReport = async (req, res) => {
+const getLoanReport = async (req, res, next) => {
   try {
     const { fromDate, toDate, customerId, status } = req.query;
     let query = {};
@@ -116,16 +114,13 @@ const getLoanReport = async (req, res) => {
     }));
 
     res.json(formattedLoans);
-  } catch (error) {
-    console.error('Error generating loan report:', error);
-    res.status(500).json({ message: 'Server Error', error: error.message });
-  }
+  } catch (error) { next(error); }
 };
 
 // @desc    Get Loan Outstanding Report
 // @route   GET /api/reports/loan-outstanding
 // @access  Public
-const getLoanOutstandingReport = async (req, res) => {
+const getLoanOutstandingReport = async (req, res, next) => {
   try {
     const { fromDate, toDate, customerId, status } = req.query;
     let query = {
@@ -170,16 +165,13 @@ const getLoanOutstandingReport = async (req, res) => {
     }));
 
     res.json(formattedLoans);
-  } catch (error) {
-    console.error('Error generating loan outstanding report:', error);
-    res.status(500).json({ message: 'Server Error', error: error.message });
-  }
+  } catch (error) { next(error); }
 };
 
 // @desc    Get Interest Pending Report
 // @route   GET /api/reports/interest-pending
 // @access  Public
-const getInterestPendingReport = async (req, res) => {
+const getInterestPendingReport = async (req, res, next) => {
   try {
     const { fromDate, toDate, customerId, status } = req.query;
     let query = {
@@ -223,16 +215,13 @@ const getInterestPendingReport = async (req, res) => {
     }));
 
     res.json(formattedLoans);
-  } catch (error) {
-    console.error('Error generating interest pending report:', error);
-    res.status(500).json({ message: 'Server Error', error: error.message });
-  }
+  } catch (error) { next(error); }
 };
 
 // @desc    Get Closed Accounts Report
 // @route   GET /api/reports/closed-accounts
 // @access  Public
-const getClosedAccountsReport = async (req, res) => {
+const getClosedAccountsReport = async (req, res, next) => {
   try {
     const { fromDate, toDate, customerId } = req.query;
     let query = {
@@ -281,16 +270,13 @@ const getClosedAccountsReport = async (req, res) => {
     });
 
     res.json(formattedLoans);
-  } catch (error) {
-    console.error('Error generating closed accounts report:', error);
-    res.status(500).json({ message: 'Server Error', error: error.message });
-  }
+  } catch (error) { next(error); }
 };
 
 // @desc    Get Repledge Report
 // @route   GET /api/reports/repledge-report
 // @access  Public
-const getRepledgeReport = async (req, res) => {
+const getRepledgeReport = async (req, res, next) => {
   try {
     const { fromDate, toDate, loanId, customerId } = req.query;
     let query = {};
@@ -333,16 +319,13 @@ const getRepledgeReport = async (req, res) => {
     }));
 
     res.json(formattedRepledges);
-  } catch (error) {
-    console.error('Error generating repledge report:', error);
-    res.status(500).json({ message: 'Server Error', error: error.message });
-  }
+  } catch (error) { next(error); }
 };
 
 // @desc    Get Account Summary Report
 // @route   GET /api/reports/account-summary
 // @access  Public
-const getAccountSummaryReport = async (req, res) => {
+const getAccountSummaryReport = async (req, res, next) => {
   try {
     const { fromDate, toDate } = req.query;
 
@@ -427,16 +410,13 @@ const getAccountSummaryReport = async (req, res) => {
       closedLoanCount
     });
 
-  } catch (error) {
-    console.error('Error generating account summary report:', error);
-    res.status(500).json({ message: 'Server Error', error: error.message });
-  }
+  } catch (error) { next(error); }
 };
 
 // @desc    Get Today Collection Report
 // @route   GET /api/reports/today-collection
 // @access  Public
-const getTodayCollectionReport = async (req, res) => {
+const getTodayCollectionReport = async (req, res, next) => {
   try {
     const { fromDate, toDate, customerId, loanId, paymentMode } = req.query;
 
@@ -524,16 +504,13 @@ const getTodayCollectionReport = async (req, res) => {
       },
       tableData: payments
     });
-  } catch (error) {
-    console.error('Error generating today collection report:', error);
-    res.status(500).json({ message: 'Server Error', error: error.message });
-  }
+  } catch (error) { next(error); }
 };
 
 // @desc    Get Datewise Pending List Report
 // @route   GET /api/reports/datewise-pending
 // @access  Public
-const getDatewisePendingReport = async (req, res) => {
+const getDatewisePendingReport = async (req, res, next) => {
   try {
     const { fromDate, toDate, customerId } = req.query;
 
@@ -582,16 +559,13 @@ const getDatewisePendingReport = async (req, res) => {
     });
 
     res.json(formattedLoans);
-  } catch (error) {
-    console.error('Error generating datewise pending report:', error);
-    res.status(500).json({ message: 'Server Error', error: error.message });
-  }
+  } catch (error) { next(error); }
 };
 
 // @desc    Get Cash Assets Report
 // @route   GET /api/reports/cash-assets
 // @access  Public
-const getCashAssetsReport = async (req, res) => {
+const getCashAssetsReport = async (req, res, next) => {
   try {
     const { fromDate, toDate } = req.query;
 
@@ -672,16 +646,13 @@ const getCashAssetsReport = async (req, res) => {
       totalTransactions: transactions.length,
       transactions
     });
-  } catch (error) {
-    console.error('Error generating cash assets report:', error);
-    res.status(500).json({ message: 'Server Error', error: error.message });
-  }
+  } catch (error) { next(error); }
 };
 
 // @desc    Get Auction Accounts Report
 // @route   GET /api/reports/auction-accounts
 // @access  Public
-const getAuctionAccountsReport = async (req, res) => {
+const getAuctionAccountsReport = async (req, res, next) => {
   try {
     const { fromDate, toDate, customerId, status } = req.query;
 
@@ -732,16 +703,13 @@ const getAuctionAccountsReport = async (req, res) => {
     });
 
     res.json(formattedLoans);
-  } catch (error) {
-    console.error('Error generating auction accounts report:', error);
-    res.status(500).json({ message: 'Server Error', error: error.message });
-  }
+  } catch (error) { next(error); }
 };
 
 // @desc    Get Business Report
 // @route   GET /api/reports/business-report
 // @access  Public
-const getBusinessReport = async (req, res) => {
+const getBusinessReport = async (req, res, next) => {
   try {
     const { fromDate, toDate } = req.query;
 
@@ -832,17 +800,14 @@ const getBusinessReport = async (req, res) => {
         netCashPosition
       }
     });
-  } catch (error) {
-    console.error('Error generating business report:', error);
-    res.status(500).json({ message: 'Server Error', error: error.message });
-  }
+  } catch (error) { next(error); }
 };
 
 
 // @desc    Get Daily Closing Summary Report (Ledger Format)
 // @route   GET /api/reports/daily-closing-summary
 // @access  Public
-const getDailyClosingSummary = async (req, res) => {
+const getDailyClosingSummary = async (req, res, next) => {
   try {
     const { date } = req.query;
     const targetDate = date ? new Date(date) : new Date();
@@ -978,10 +943,7 @@ const getDailyClosingSummary = async (req, res) => {
       },
       goldStock
     });
-  } catch (error) {
-    console.error('Error generating daily closing summary:', error);
-    res.status(500).json({ message: 'Server Error', error: error.message });
-  }
+  } catch (error) { next(error); }
 };
 
 module.exports = {

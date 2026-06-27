@@ -10,6 +10,7 @@ const cors = require('cors');
 const dotenv = require('dotenv');
 const morgan = require('morgan');
 const path = require('path');
+const { notFoundHandler, globalErrorHandler } = require('./middleware/errorHandler');
 
 dotenv.config();
 
@@ -43,6 +44,7 @@ const goldRequestRoutes = require('./routes/goldRequestRoutes');
 const callLogRoutes = require('./routes/callLogRoutes');
 const goldSchemeRoutes = require('./routes/goldSchemeRoutes');
 const provideLoanRoutes = require('./routes/provideLoanRoutes');
+const customerLedgerRoutes = require('./routes/customerLedgerRoutes');
 
 app.use('/api/auth',      authRoutes);
 app.use('/api/employees', employeeRoutes);
@@ -64,10 +66,15 @@ app.use('/api/gold-requests', goldRequestRoutes);
 app.use('/api/calls', callLogRoutes);
 app.use('/api/gold-schemes', goldSchemeRoutes);
 app.use('/api/provide-loan', provideLoanRoutes);
+app.use('/api/customer-ledger', customerLedgerRoutes);
 
 app.get('/api/health', (req, res) => {
     res.status(200).json({ status: 'ok', message: 'API is running' });
 });
+
+// Global Error Handling
+app.use(notFoundHandler);
+app.use(globalErrorHandler);
 
 // Database connection
 const PORT = process.env.PORT || 5000;

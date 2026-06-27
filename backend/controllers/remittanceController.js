@@ -1,7 +1,8 @@
+const ApiError = require('../utils/ApiError');
 const { Remittance, RemittanceCounter } = require('../models/Remittance');
 
 // Get next remittance ID
-exports.getNextId = async (req, res) => {
+exports.getNextId = async (req, res, next) => {
     try {
         const counter = await RemittanceCounter.findById('remittanceNo');
         const nextSeq = counter ? counter.seq + 1 : 1;
@@ -11,27 +12,18 @@ exports.getNextId = async (req, res) => {
             success: true,
             nextId
         });
-    } catch (error) {
-        console.error('Error fetching next remittance ID:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Failed to fetch next ID',
-            error: error.message
-        });
-    }
+    } catch (error) { next(error); }
 };
 
 // Create a new remittance
-exports.createRemittance = async (req, res) => {
+exports.createRemittance = async (req, res, next) => {
     try {
         const remittance = new Remittance(req.body);
         
         // Ensure amount is > 0
         if (remittance.amount <= 0) {
-            return res.status(400).json({
-                success: false,
-                message: 'Amount must be greater than 0'
-            });
+            return next(new ApiError(400, 'Amount must be greater than 0'
+            ));
         }
 
         await remittance.save();
@@ -41,49 +33,33 @@ exports.createRemittance = async (req, res) => {
             message: 'Remittance created successfully',
             data: remittance
         });
-    } catch (error) {
-        console.error('Error creating remittance:', error);
-        res.status(400).json({
-            success: false,
-            message: error.message || 'Failed to create remittance'
-        });
-    }
+    } catch (error) { next(error); }
 };
 
 // Get all remittances
-exports.getRemittances = async (req, res) => {
+exports.getRemittances = async (req, res, next) => {
     try {
         const remittances = await Remittance.find().sort({ createdAt: -1 });
         res.status(200).json({
             success: true,
             data: remittances
         });
-    } catch (error) {
-        console.error('Error fetching remittances:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Failed to fetch remittances',
-            error: error.message
-        });
-    }
+    } catch (error) { next(error); }
 };
 
 // Get single remittance by ID
-exports.getRemittanceById = async (req, res) => {
+exports.getRemittanceById = async (req, res, next) => {
     try {
         const remittance = await Remittance.findOne({ remittanceNo: req.params.remittanceId });
         if (!remittance) {
-            return res.status(404).json({ success: false, message: 'Remittance not found' });
+            return next(new ApiError(404, 'Remittance not found' ));
         }
         res.status(200).json({ success: true, data: remittance });
-    } catch (error) {
-        console.error('Error fetching remittance:', error);
-        res.status(500).json({ success: false, message: 'Failed to fetch remittance', error: error.message });
-    }
+    } catch (error) { next(error); }
 };
 
 // Get remittance report with filters and summary
-exports.getRemittanceReport = async (req, res) => {
+exports.getRemittanceReport = async (req, res, next) => {
     try {
         const { fromDate, toDate, remittanceType, remittanceNo } = req.query;
         let filter = {};
@@ -123,8 +99,5 @@ exports.getRemittanceReport = async (req, res) => {
                 netTransfer
             }
         });
-    } catch (error) {
-        console.error('Error fetching remittance report:', error);
-        res.status(500).json({ success: false, message: 'Failed to fetch remittance report', error: error.message });
-    }
+    } catch (error) { next(error); }
 };

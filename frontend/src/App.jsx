@@ -11,6 +11,7 @@ import AadharVerification from './pages/AadharVerification';
 import ProvideLoan from './pages/ProvideLoan';
 import EditLoan from './pages/EditLoan';
 import CustomerHistory from './pages/CustomerHistory';
+import CustomerLedger from './pages/CustomerLedger';
 import RepledgingChangeStatus from './pages/RepledgingChangeStatus';
 import TopUpLoan from './pages/TopUpLoan';
 import ReceivePayment from './pages/ReceivePayment';
@@ -44,6 +45,7 @@ function App() {
             <Route path="/edit-delete-customer" element={<EditDeleteCustomer />} />
             <Route path="/customer-approval-pending" element={<CustomerApprovalPending />} />
             <Route path="/aadhar-verification" element={<AadharVerification />} />
+            <Route path="/customer-ledger" element={<CustomerLedger />} />
             <Route path="/provide-loan" element={<ProvideLoan />} />
             <Route path="/edit-loan" element={<EditLoan />} />
             <Route path="/customer-history" element={<CustomerHistory />} />
@@ -78,6 +80,7 @@ function App() {
             <Route path="/add-denomination" element={<AddDenomination />} />
 
             {/* Customer call */}
+            <Route path="/followups" element={<AddFollowup />} />
             <Route path="/call-log" element={<AddFollowup />} />
             <Route path="/pending-calls" element={<CallReport />} />
             <Route path="/add-followup" element={<AddFollowup />} />

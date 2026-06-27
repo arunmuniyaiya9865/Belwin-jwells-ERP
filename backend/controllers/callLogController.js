@@ -1,8 +1,9 @@
+const ApiError = require('../utils/ApiError');
 const { CallLog } = require('../models/CallLog');
 const { Customer } = require('../models/Customer');
 
 // Create a new call log
-exports.createCallLog = async (req, res) => {
+exports.createCallLog = async (req, res, next) => {
     try {
         const {
             customerId,
@@ -20,10 +21,8 @@ exports.createCallLog = async (req, res) => {
 
         // Basic validation
         if (!customerId || !callDate || !callStatus) {
-            return res.status(400).json({
-                success: false,
-                message: 'customerId, callDate, and callStatus are required'
-            });
+            return next(new ApiError(400, 'customerId, callDate, and callStatus are required'
+            ));
         }
 
         const callLog = new CallLog({
@@ -47,78 +46,48 @@ exports.createCallLog = async (req, res) => {
             data: callLog,
             message: 'Call log created successfully'
         });
-    } catch (error) {
-        console.error('Error creating call log:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Failed to create call log',
-            error: error.message
-        });
-    }
+    } catch (error) { next(error); }
 };
 
 // Get all call logs
-exports.getCallLogs = async (req, res) => {
+exports.getCallLogs = async (req, res, next) => {
     try {
         const callLogs = await CallLog.find().sort({ createdAt: -1 });
         res.status(200).json({
             success: true,
             data: callLogs
         });
-    } catch (error) {
-        console.error('Error fetching call logs:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Failed to fetch call logs',
-            error: error.message
-        });
-    }
+    } catch (error) { next(error); }
 };
 
 // Get call log by ID
-exports.getCallLogById = async (req, res) => {
+exports.getCallLogById = async (req, res, next) => {
     try {
         const callLog = await CallLog.findOne({ callId: req.params.callId });
         if (!callLog) {
-            return res.status(404).json({
-                success: false,
-                message: 'Call log not found'
-            });
+            return next(new ApiError(404, 'Call log not found'
+            ));
         }
         res.status(200).json({
             success: true,
             data: callLog
         });
-    } catch (error) {
-        console.error('Error fetching call log:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Failed to fetch call log',
-            error: error.message
-        });
-    }
+    } catch (error) { next(error); }
 };
 
 // Get call logs by customer ID
-exports.getCallLogsByCustomerId = async (req, res) => {
+exports.getCallLogsByCustomerId = async (req, res, next) => {
     try {
         const callLogs = await CallLog.find({ customerId: req.params.customerId }).sort({ createdAt: -1 });
         res.status(200).json({
             success: true,
             data: callLogs
         });
-    } catch (error) {
-        console.error('Error fetching call logs by customerId:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Failed to fetch call logs',
-            error: error.message
-        });
-    }
+    } catch (error) { next(error); }
 };
 
 // Get call logs report with filters and summary
-exports.getCallLogsReport = async (req, res) => {
+exports.getCallLogsReport = async (req, res, next) => {
     try {
         const { fromDate, toDate, customerId, callStatus, employeeName } = req.query;
         
@@ -158,12 +127,5 @@ exports.getCallLogsReport = async (req, res) => {
                 noResponseCalls
             }
         });
-    } catch (error) {
-        console.error('Error fetching call report:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Failed to fetch call report',
-            error: error.message
-        });
-    }
+    } catch (error) { next(error); }
 };

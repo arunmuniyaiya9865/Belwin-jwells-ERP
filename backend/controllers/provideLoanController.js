@@ -1,7 +1,8 @@
+const ApiError = require('../utils/ApiError');
 const { Customer } = require('../models/Customer');
 const GoldScheme = require('../models/GoldScheme');
 
-exports.getProvideLoanDetails = async (req, res) => {
+exports.getProvideLoanDetails = async (req, res, next) => {
     try {
         const { customerId } = req.params;
 
@@ -14,7 +15,7 @@ exports.getProvideLoanDetails = async (req, res) => {
         // Fetch Customer Details
         const customer = await Customer.findOne(query);
         if (!customer) {
-            return res.status(404).json({ message: "Customer not found" });
+            return next(new ApiError(404, "Customer not found" ));
         }
 
         // Fetch Active Gold Scheme
@@ -24,7 +25,7 @@ exports.getProvideLoanDetails = async (req, res) => {
         });
 
         if (!scheme) {
-            return res.status(404).json({ message: "No Active Gold Scheme Found" });
+            return next(new ApiError(404, "No Active Gold Scheme Found" ));
         }
 
         // Return combined details
@@ -55,6 +56,6 @@ exports.getProvideLoanDetails = async (req, res) => {
             }
         });
     } catch (error) {
-        res.status(500).json({ message: "Error fetching provide loan details", error: error.message });
+        next(new ApiError(500, "Error fetching provide loan details"));
     }
 };

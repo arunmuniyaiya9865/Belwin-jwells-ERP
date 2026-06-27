@@ -1,3 +1,4 @@
+const ApiError = require('../utils/ApiError');
 const User = require('../models/User');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
@@ -11,7 +12,7 @@ const generateToken = (id) => {
 // @desc    Auth user & get token
 // @route   POST /api/auth/login
 // @access  Public
-const loginUser = async (req, res) => {
+const loginUser = async (req, res, next) => {
     const { username, password } = req.body;
 
     try {
@@ -26,24 +27,24 @@ const loginUser = async (req, res) => {
                 token: generateToken(user._id),
             });
         } else {
-            res.status(401).json({ message: 'Invalid username or password' });
+            next(new ApiError(401, 'Invalid username or password' ));
         }
     } catch (error) {
-        res.status(500).json({ message: 'Server error' });
+        next(new ApiError(500, 'Server error' ));
     }
 };
 
 // @desc    Register a new user
 // @route   POST /api/auth/register
 // @access  Private/Admin
-const registerUser = async (req, res) => {
+const registerUser = async (req, res, next) => {
     const { username, password, role, employeeId } = req.body;
 
     try {
         const userExists = await User.findOne({ username });
 
         if (userExists) {
-            return res.status(400).json({ message: 'User already exists' });
+            return next(new ApiError(400, 'User already exists' ));
         }
 
         const salt = await bcrypt.genSalt(10);
@@ -64,10 +65,10 @@ const registerUser = async (req, res) => {
                 token: generateToken(user._id),
             });
         } else {
-            res.status(400).json({ message: 'Invalid user data' });
+            next(new ApiError(400, 'Invalid user data' ));
         }
     } catch (error) {
-        res.status(500).json({ message: 'Server error' });
+        next(new ApiError(500, 'Server error' ));
     }
 };
 

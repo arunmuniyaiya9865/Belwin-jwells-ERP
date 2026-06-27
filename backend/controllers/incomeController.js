@@ -1,9 +1,10 @@
+const ApiError = require('../utils/ApiError');
 const Income = require('../models/Income');
 
 // @desc    Get next Income ID
 // @route   GET /api/incomes/next-id
 // @access  Public
-const getNextIncomeId = async (req, res) => {
+const getNextIncomeId = async (req, res, next) => {
   try {
     const lastIncome = await Income.findOne().sort({ createdAt: -1 });
     let nextId = 'INC000001';
@@ -16,16 +17,13 @@ const getNextIncomeId = async (req, res) => {
     }
     
     res.json({ nextId });
-  } catch (error) {
-    console.error('Error getting next income ID:', error);
-    res.status(500).json({ message: 'Server Error', error: error.message });
-  }
+  } catch (error) { next(error); }
 };
 
 // @desc    Create new income
 // @route   POST /api/incomes
 // @access  Public
-const createIncome = async (req, res) => {
+const createIncome = async (req, res, next) => {
   try {
     const {
       incomeId, incomeDate, incomeCategory, incomeSubCategory,
@@ -35,11 +33,11 @@ const createIncome = async (req, res) => {
     } = req.body;
 
     if (!incomeId || !incomeDate || !incomeCategory || !amount || !paymentMode || !receivedFrom) {
-      return res.status(400).json({ message: 'Please provide all required fields' });
+      return next(new ApiError(400, 'Please provide all required fields' ));
     }
 
     if (parseFloat(amount) <= 0) {
-      return res.status(400).json({ message: 'Amount must be greater than 0' });
+      return next(new ApiError(400, 'Amount must be greater than 0' ));
     }
 
     const incomeExists = await Income.findOne({ incomeId });
@@ -55,29 +53,23 @@ const createIncome = async (req, res) => {
     });
 
     res.status(201).json(income);
-  } catch (error) {
-    console.error('Error creating income:', error);
-    res.status(500).json({ message: 'Server Error', error: error.message });
-  }
+  } catch (error) { next(error); }
 };
 
 // @desc    Get all incomes
 // @route   GET /api/incomes
 // @access  Public
-const getIncomes = async (req, res) => {
+const getIncomes = async (req, res, next) => {
   try {
     const incomes = await Income.find().sort({ createdAt: -1 });
     res.json(incomes);
-  } catch (error) {
-    console.error('Error fetching incomes:', error);
-    res.status(500).json({ message: 'Server Error', error: error.message });
-  }
+  } catch (error) { next(error); }
 };
 
 // @desc    Get income by ID
 // @route   GET /api/incomes/:incomeId
 // @access  Public
-const getIncomeById = async (req, res) => {
+const getIncomeById = async (req, res, next) => {
   try {
     const { incomeId } = req.params;
     console.log(`[Search Flow] Request received for Income ID: ${incomeId}`);
@@ -85,21 +77,18 @@ const getIncomeById = async (req, res) => {
     const income = await Income.findOne({ incomeId });
     if (!income) {
       console.log(`[Search Flow] Income ${incomeId} not found`);
-      return res.status(404).json({ message: 'Income not found' });
+      return next(new ApiError(404, 'Income not found' ));
     }
     
     console.log(`[Search Flow] Income found! Returning data...`);
     res.json(income);
-  } catch (error) {
-    console.error('Error fetching income:', error);
-    res.status(500).json({ message: 'Server Error', error: error.message });
-  }
+  } catch (error) { next(error); }
 };
 
 // @desc    Update income
 // @route   PUT /api/incomes/:incomeId
 // @access  Public
-const updateIncome = async (req, res) => {
+const updateIncome = async (req, res, next) => {
   try {
     const { incomeId } = req.params;
     let updateData = { ...req.body };
@@ -109,7 +98,7 @@ const updateIncome = async (req, res) => {
     delete updateData.createdAt;
 
     if (updateData.amount !== undefined && parseFloat(updateData.amount) <= 0) {
-      return res.status(400).json({ message: 'Amount must be greater than 0' });
+      return next(new ApiError(400, 'Amount must be greater than 0' ));
     }
 
     const updatedIncome = await Income.findOneAndUpdate(
@@ -119,40 +108,34 @@ const updateIncome = async (req, res) => {
     );
 
     if (!updatedIncome) {
-      return res.status(404).json({ message: 'Income not found' });
+      return next(new ApiError(404, 'Income not found' ));
     }
 
     console.log(`[Update Flow] Income ${incomeId} updated successfully`);
     res.json(updatedIncome);
-  } catch (error) {
-    console.error('Error updating income:', error);
-    res.status(500).json({ message: 'Server Error', error: error.message });
-  }
+  } catch (error) { next(error); }
 };
 
 // @desc    Delete income
 // @route   DELETE /api/incomes/:incomeId
 // @access  Public
-const deleteIncome = async (req, res) => {
+const deleteIncome = async (req, res, next) => {
   try {
     const { incomeId } = req.params;
     const deletedIncome = await Income.findOneAndDelete({ incomeId });
 
     if (!deletedIncome) {
-      return res.status(404).json({ message: 'Income not found' });
+      return next(new ApiError(404, 'Income not found' ));
     }
 
     res.json({ message: 'Income removed successfully' });
-  } catch (error) {
-    console.error('Error deleting income:', error);
-    res.status(500).json({ message: 'Server Error', error: error.message });
-  }
+  } catch (error) { next(error); }
 };
 
 // @desc    Get income report with filters and summary
 // @route   GET /api/incomes/report
 // @access  Public
-const getIncomeReport = async (req, res) => {
+const getIncomeReport = async (req, res, next) => {
   try {
     const { fromDate, toDate, incomeId, incomeCategory, paymentMode } = req.query;
     
@@ -197,10 +180,7 @@ const getIncomeReport = async (req, res) => {
         bankOnlineIncome
       }
     });
-  } catch (error) {
-    console.error('Error generating income report:', error);
-    res.status(500).json({ success: false, message: 'Server Error', error: error.message });
-  }
+  } catch (error) { next(error); }
 };
 
 module.exports = {

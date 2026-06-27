@@ -1,9 +1,10 @@
+const ApiError = require('../utils/ApiError');
 const Denomination = require('../models/Denomination');
 
 // @desc    Get next Denomination ID
 // @route   GET /api/denominations/next-id
 // @access  Public
-const getNextDenominationId = async (req, res) => {
+const getNextDenominationId = async (req, res, next) => {
   try {
     const lastDenom = await Denomination.findOne().sort({ createdAt: -1 });
     let nextId = 'DEN000001';
@@ -16,16 +17,13 @@ const getNextDenominationId = async (req, res) => {
     }
     
     res.json({ nextId });
-  } catch (error) {
-    console.error('Error getting next denomination ID:', error);
-    res.status(500).json({ message: 'Server Error', error: error.message });
-  }
+  } catch (error) { next(error); }
 };
 
 // @desc    Create new denomination
 // @route   POST /api/denominations
 // @access  Public
-const createDenomination = async (req, res) => {
+const createDenomination = async (req, res, next) => {
   try {
     const {
       denominationId, entryDate, cashInHandTotal,
@@ -55,46 +53,37 @@ const createDenomination = async (req, res) => {
     });
 
     res.status(201).json(denomination);
-  } catch (error) {
-    console.error('Error creating denomination:', error);
-    res.status(500).json({ message: 'Server Error', error: error.message });
-  }
+  } catch (error) { next(error); }
 };
 
 // @desc    Get all denominations
 // @route   GET /api/denominations
 // @access  Public
-const getDenominations = async (req, res) => {
+const getDenominations = async (req, res, next) => {
   try {
     const denominations = await Denomination.find().sort({ createdAt: -1 });
     res.json(denominations);
-  } catch (error) {
-    console.error('Error fetching denominations:', error);
-    res.status(500).json({ message: 'Server Error', error: error.message });
-  }
+  } catch (error) { next(error); }
 };
 
 // @desc    Get denomination by ID
 // @route   GET /api/denominations/:denominationId
 // @access  Public
-const getDenominationById = async (req, res) => {
+const getDenominationById = async (req, res, next) => {
   try {
     const { denominationId } = req.params;
     const denomination = await Denomination.findOne({ denominationId });
     if (!denomination) {
-      return res.status(404).json({ message: 'Denomination not found' });
+      return next(new ApiError(404, 'Denomination not found' ));
     }
     res.json(denomination);
-  } catch (error) {
-    console.error('Error fetching denomination:', error);
-    res.status(500).json({ message: 'Server Error', error: error.message });
-  }
+  } catch (error) { next(error); }
 };
 
 // @desc    Update denomination
 // @route   PUT /api/denominations/:denominationId
 // @access  Public
-const updateDenomination = async (req, res) => {
+const updateDenomination = async (req, res, next) => {
   try {
     const { denominationId } = req.params;
     let updateData = { ...req.body };
@@ -121,14 +110,11 @@ const updateDenomination = async (req, res) => {
     );
 
     if (!updatedDenomination) {
-      return res.status(404).json({ message: 'Denomination not found' });
+      return next(new ApiError(404, 'Denomination not found' ));
     }
 
     res.json(updatedDenomination);
-  } catch (error) {
-    console.error('Error updating denomination:', error);
-    res.status(500).json({ message: 'Server Error', error: error.message });
-  }
+  } catch (error) { next(error); }
 };
 
 module.exports = {

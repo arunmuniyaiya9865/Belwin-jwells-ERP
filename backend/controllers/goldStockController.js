@@ -1,39 +1,31 @@
+const ApiError = require('../utils/ApiError');
 const GoldStock = require('../models/GoldStock');
 
 // Get all gold stock
-exports.getGoldStocks = async (req, res) => {
+exports.getGoldStocks = async (req, res, next) => {
     try {
         const stocks = await GoldStock.find().sort({ createdAt: -1 });
         res.status(200).json({ success: true, data: stocks });
-    } catch (error) {
-        console.error('Error fetching gold stock:', error);
-        res.status(500).json({ success: false, message: 'Failed to fetch gold stock', error: error.message });
-    }
+    } catch (error) { next(error); }
 };
 
 // Get single gold stock by stockId
-exports.getGoldStockById = async (req, res) => {
+exports.getGoldStockById = async (req, res, next) => {
     try {
         const stock = await GoldStock.findOne({ stockId: req.params.stockId });
         if (!stock) {
-            return res.status(404).json({ success: false, message: 'Stock not found' });
+            return next(new ApiError(404, 'Stock not found' ));
         }
         res.status(200).json({ success: true, data: stock });
-    } catch (error) {
-        console.error('Error fetching gold stock:', error);
-        res.status(500).json({ success: false, message: 'Failed to fetch gold stock', error: error.message });
-    }
+    } catch (error) { next(error); }
 };
 
 // Get gold stock for a specific loan
-exports.getGoldStockByLoanId = async (req, res) => {
+exports.getGoldStockByLoanId = async (req, res, next) => {
     try {
         const stocks = await GoldStock.find({ loanId: req.params.loanId });
         res.status(200).json({ success: true, data: stocks });
-    } catch (error) {
-        console.error('Error fetching gold stock for loan:', error);
-        res.status(500).json({ success: false, message: 'Failed to fetch gold stock for loan', error: error.message });
-    }
+    } catch (error) { next(error); }
 };
 
 // Centralized GoldStock Synchronization Utility
@@ -61,7 +53,7 @@ exports.syncGoldStockStatus = async (loanId, loanStatus) => {
 };
 
 // Get reporting data with filters and aggregations
-exports.getGoldStockReport = async (req, res) => {
+exports.getGoldStockReport = async (req, res, next) => {
     try {
         const { stockId, loanId, customerId, status, fromDate, toDate } = req.query;
         let filter = {};
@@ -102,8 +94,5 @@ exports.getGoldStockReport = async (req, res) => {
                 auctionReadyArticles
             }
         });
-    } catch (error) {
-        console.error('Error fetching gold stock report:', error);
-        res.status(500).json({ success: false, message: 'Failed to fetch gold stock report', error: error.message });
-    }
+    } catch (error) { next(error); }
 };

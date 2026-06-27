@@ -41,7 +41,8 @@ const Header = () => {
         { name: 'New Customer' },
         { name: 'Edit/Delete Customer' },
         { name: 'Customer Approval Pending' },
-        { name: 'Aadhar Verification' }
+        { name: 'Aadhar Verification' },
+        { name: 'Customer Ledger' }
       ]
     },
     {

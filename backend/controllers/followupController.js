@@ -1,9 +1,10 @@
+const ApiError = require('../utils/ApiError');
 const Followup = require('../models/Followup');
 
 // @desc    Create a new followup
 // @route   POST /api/followups
 // @access  Public
-const createFollowup = async (req, res) => {
+const createFollowup = async (req, res, next) => {
     try {
         const {
             customerName,
@@ -36,17 +37,15 @@ const createFollowup = async (req, res) => {
             data: followup
         });
     } catch (error) {
-        res.status(400).json({
-            success: false,
-            message: error.message
-        });
+        next(new ApiError(400, error.message
+        ));
     }
 };
 
 // @desc    Get all followups
 // @route   GET /api/followups
 // @access  Public
-const getFollowups = async (req, res) => {
+const getFollowups = async (req, res, next) => {
     try {
         const followups = await Followup.find().sort({ createdAt: -1 });
 
@@ -56,10 +55,8 @@ const getFollowups = async (req, res) => {
             data: followups
         });
     } catch (error) {
-        res.status(500).json({
-            success: false,
-            message: 'Server Error'
-        });
+        next(new ApiError(500, 'Server Error'
+        ));
     }
 };
 

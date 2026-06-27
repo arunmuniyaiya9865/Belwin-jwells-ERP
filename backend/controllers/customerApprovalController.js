@@ -1,3 +1,4 @@
+const ApiError = require('../utils/ApiError');
 const customerApprovalService = require('../services/customerApprovalService');
 
 /**
@@ -5,7 +6,7 @@ const customerApprovalService = require('../services/customerApprovalService');
  * @route   GET /api/customer-approval/search
  * @access  Private
  */
-const searchCustomer = async (req, res) => {
+const searchCustomer = async (req, res, next) => {
     try {
         const { customerId } = req.query;
         const user = req.user; // Provided by auth middleware or guestUser
@@ -29,7 +30,7 @@ const searchCustomer = async (req, res) => {
  * @desc    Debug customer find (Requirement 8)
  * @route   GET /api/customer-approval/debug/:customerId
  */
-const getDebugInfo = async (req, res) => {
+const getDebugInfo = async (req, res, next) => {
     try {
         const { customerId } = req.params;
         const user = req.user;
@@ -44,7 +45,7 @@ const getDebugInfo = async (req, res) => {
             userRole: user.role
         });
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        next(new ApiError(500, error.message ));
     }
 };
 
@@ -53,7 +54,7 @@ const getDebugInfo = async (req, res) => {
  * @route   GET /api/customer-approval/status/:customerId
  * @access  Private
  */
-const getStatus = async (req, res) => {
+const getStatus = async (req, res, next) => {
     try {
         const { customerId } = req.params;
         const data = await customerApprovalService.getLoanStatus(customerId);
@@ -63,7 +64,7 @@ const getStatus = async (req, res) => {
         console.error('getStatus error:', error);
         const status = error.status || 500;
         const message = error.message || 'Server error';
-        res.status(status).json({ success: false, message });
+        next(new ApiError(status || 500, message));
     }
 };
 

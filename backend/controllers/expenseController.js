@@ -1,3 +1,4 @@
+const ApiError = require('../utils/ApiError');
 const Expense = require('../models/Expense');
 const { cloudinary, deleteFromCloudinary } = require('../config/cloudinary');
 const streamifier = require('streamifier');
@@ -18,7 +19,7 @@ const uploadFromBuffer = (buffer, folder, public_id) => {
 // @desc    Get next Expense ID
 // @route   GET /api/expenses/next-id
 // @access  Public
-const getNextExpenseId = async (req, res) => {
+const getNextExpenseId = async (req, res, next) => {
   try {
     const lastExpense = await Expense.findOne().sort({ createdAt: -1 });
     let nextId = 'EXP000001';
@@ -31,16 +32,13 @@ const getNextExpenseId = async (req, res) => {
     }
     
     res.json({ nextId });
-  } catch (error) {
-    console.error('Error getting next expense ID:', error);
-    res.status(500).json({ message: 'Server Error', error: error.message });
-  }
+  } catch (error) { next(error); }
 };
 
 // @desc    Create new expense
 // @route   POST /api/expenses
 // @access  Public
-const createExpense = async (req, res) => {
+const createExpense = async (req, res, next) => {
   try {
     const {
       expenseId, expenseDate, expenseCategory, expenseSubCategory,
@@ -49,11 +47,11 @@ const createExpense = async (req, res) => {
     } = req.body;
 
     if (!expenseId || !expenseDate || !expenseCategory || !expenseAmount || !paymentMode || !paidToVendorName) {
-      return res.status(400).json({ message: 'Please provide all required fields' });
+      return next(new ApiError(400, 'Please provide all required fields' ));
     }
 
     if (parseFloat(expenseAmount) <= 0) {
-      return res.status(400).json({ message: 'Expense amount must be greater than 0' });
+      return next(new ApiError(400, 'Expense amount must be greater than 0' ));
     }
 
     const expenseExists = await Expense.findOne({ expenseId });
@@ -81,29 +79,23 @@ const createExpense = async (req, res) => {
     });
 
     res.status(201).json(expense);
-  } catch (error) {
-    console.error('Error creating expense:', error);
-    res.status(500).json({ message: 'Server Error', error: error.message });
-  }
+  } catch (error) { next(error); }
 };
 
 // @desc    Get all expenses
 // @route   GET /api/expenses
 // @access  Public
-const getExpenses = async (req, res) => {
+const getExpenses = async (req, res, next) => {
   try {
     const expenses = await Expense.find().sort({ createdAt: -1 });
     res.json(expenses);
-  } catch (error) {
-    console.error('Error fetching expenses:', error);
-    res.status(500).json({ message: 'Server Error', error: error.message });
-  }
+  } catch (error) { next(error); }
 };
 
 // @desc    Get expense by ID
 // @route   GET /api/expenses/:expenseId
 // @access  Public
-const getExpenseById = async (req, res) => {
+const getExpenseById = async (req, res, next) => {
   try {
     const { expenseId } = req.params;
     console.log(`[Search Flow] Request received for Expense ID: ${expenseId}`);
@@ -111,21 +103,18 @@ const getExpenseById = async (req, res) => {
     const expense = await Expense.findOne({ expenseId });
     if (!expense) {
       console.log(`[Search Flow] Expense ${expenseId} not found`);
-      return res.status(404).json({ message: 'Expense not found' });
+      return next(new ApiError(404, 'Expense not found' ));
     }
     
     console.log(`[Search Flow] Expense found! Returning data...`);
     res.json(expense);
-  } catch (error) {
-    console.error('Error fetching expense:', error);
-    res.status(500).json({ message: 'Server Error', error: error.message });
-  }
+  } catch (error) { next(error); }
 };
 
 // @desc    Update expense
 // @route   PUT /api/expenses/:id
 // @access  Public
-const updateExpense = async (req, res) => {
+const updateExpense = async (req, res, next) => {
   try {
     const { id } = req.params;
     const updateData = { ...req.body };
@@ -136,12 +125,12 @@ const updateExpense = async (req, res) => {
 
     const existingExpense = await Expense.findOne({ expenseId: id });
     if (!existingExpense) {
-      return res.status(404).json({ message: 'Expense not found' });
+      return next(new ApiError(404, 'Expense not found' ));
     }
 
     if (updateData.expenseAmount !== undefined) {
       if (parseFloat(updateData.expenseAmount) <= 0) {
-        return res.status(400).json({ message: 'Expense amount must be greater than 0' });
+        return next(new ApiError(400, 'Expense amount must be greater than 0' ));
       }
       updateData.amount = updateData.expenseAmount; // Keep 'amount' in sync
     }
@@ -170,27 +159,24 @@ const updateExpense = async (req, res) => {
     );
 
     if (!updatedExpense) {
-      return res.status(404).json({ message: 'Expense not found' });
+      return next(new ApiError(404, 'Expense not found' ));
     }
 
     console.log(`[Update Flow] Expense ${id} updated successfully`);
     res.json(updatedExpense);
-  } catch (error) {
-    console.error('Error updating expense:', error);
-    res.status(500).json({ message: 'Server Error', error: error.message });
-  }
+  } catch (error) { next(error); }
 };
 
 // @desc    Delete expense
 // @route   DELETE /api/expenses/:id
 // @access  Public
-const deleteExpense = async (req, res) => {
+const deleteExpense = async (req, res, next) => {
   try {
     const { id } = req.params;
     const deletedExpense = await Expense.findOneAndDelete({ expenseId: id });
 
     if (!deletedExpense) {
-      return res.status(404).json({ message: 'Expense not found' });
+      return next(new ApiError(404, 'Expense not found' ));
     }
 
     if (deletedExpense.expenseImagePublicId) {
@@ -198,16 +184,13 @@ const deleteExpense = async (req, res) => {
     }
 
     res.json({ message: 'Expense deleted successfully' });
-  } catch (error) {
-    console.error('Error deleting expense:', error);
-    res.status(500).json({ message: 'Server Error', error: error.message });
-  }
+  } catch (error) { next(error); }
 };
 
 // @desc    Get expense report with filters and summary
 // @route   GET /api/expenses/report
 // @access  Public
-const getExpenseReport = async (req, res) => {
+const getExpenseReport = async (req, res, next) => {
   try {
     const { fromDate, toDate, expenseId, expenseCategory, paymentMode } = req.query;
     
@@ -252,10 +235,7 @@ const getExpenseReport = async (req, res) => {
         bankOnlineExpenses
       }
     });
-  } catch (error) {
-    console.error('Error generating expense report:', error);
-    res.status(500).json({ success: false, message: 'Server Error', error: error.message });
-  }
+  } catch (error) { next(error); }
 };
 
 module.exports = {

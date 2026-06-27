@@ -1,3 +1,4 @@
+const ApiError = require('../utils/ApiError');
 const { Customer, Counter } = require('../models/Customer');
 const { deleteFromCloudinary } = require('../config/cloudinary');
 
@@ -48,7 +49,7 @@ const uploadFromBuffer = (buffer, folder, public_id) => {
 // @route   POST /api/customers/upload
 // @access  Private
 // ─────────────────────────────────────────────────────────────────────────────
-const uploadCustomerDocument = async (req, res) => {
+const uploadCustomerDocument = async (req, res, next) => {
     try {
         const files = req.files || {};
         const result = {};
@@ -79,10 +80,7 @@ const uploadCustomerDocument = async (req, res) => {
         }
 
         res.json({ success: true, data: result });
-    } catch (error) {
-        console.error('uploadCustomerDocument error:', error);
-        res.status(500).json({ success: false, message: 'File upload failed' });
-    }
+    } catch (error) { next(error); }
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -90,7 +88,7 @@ const uploadCustomerDocument = async (req, res) => {
 // @route   POST /api/customers
 // @access  Private (employee + admin)
 // ─────────────────────────────────────────────────────────────────────────────
-const createCustomer = async (req, res) => {
+const createCustomer = async (req, res, next) => {
     const newlyUploadedPublicIds = [];
     
     try {
@@ -168,7 +166,7 @@ const createCustomer = async (req, res) => {
         for (const pid of newlyUploadedPublicIds) {
             await deleteFromCloudinary(pid).catch(() => {});
         }
-        res.status(500).json({ success: false, message: error.message || 'Server error', errors: error.errors });
+        next(new ApiError(500, error.message || 'Server error'));
     }
 };
 
@@ -177,7 +175,7 @@ const createCustomer = async (req, res) => {
 // @route   GET /api/customers
 // @access  Private (admin sees all, employee sees own)
 // ─────────────────────────────────────────────────────────────────────────────
-const getCustomers = async (req, res) => {
+const getCustomers = async (req, res, next) => {
     try {
         const {
             page = 1, limit = 10,
@@ -237,10 +235,7 @@ const getCustomers = async (req, res) => {
                 pages: Math.ceil(total / Number(limit)),
             },
         });
-    } catch (error) {
-        console.error('getCustomers error:', error);
-        res.status(500).json({ success: false, message: 'Server error' });
-    }
+    } catch (error) { next(error); }
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -248,7 +243,7 @@ const getCustomers = async (req, res) => {
 // @route   GET /api/customers/:id
 // @access  Private
 // ─────────────────────────────────────────────────────────────────────────────
-const getCustomerById = async (req, res) => {
+const getCustomerById = async (req, res, next) => {
     try {
         const { id } = req.params;
         const mongoose = require('mongoose');
@@ -267,22 +262,19 @@ const getCustomerById = async (req, res) => {
             .populate('auditLog.performedBy', 'username role');
 
         if (!customer) {
-            return res.status(404).json({ success: false, message: 'Customer not found' });
+            return next(new ApiError(404, 'Customer not found' ));
         }
 
         const isGuest = req.user._id === '000000000000000000000000';
         if (!isGuest && req.user.role !== 'admin') {
             const ownerId = customer.createdBy?._id?.toString() || customer.createdBy?.toString();
             if (ownerId && ownerId !== req.user._id.toString()) {
-                return res.status(403).json({ success: false, message: 'Access denied' });
+                return next(new ApiError(403, 'Access denied' ));
             }
         }
 
         res.json({ success: true, data: customer });
-    } catch (error) {
-        console.error('getCustomerById error:', error);
-        res.status(500).json({ success: false, message: 'Server error' });
-    }
+    } catch (error) { next(error); }
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -290,16 +282,16 @@ const getCustomerById = async (req, res) => {
 // @route   PUT /api/customers/:id
 // @access  Private
 // ─────────────────────────────────────────────────────────────────────────────
-const updateCustomer = async (req, res) => {
+const updateCustomer = async (req, res, next) => {
     try {
         const customer = await Customer.findOne({ _id: req.params.id, isDeleted: { $ne: true } });
-        if (!customer) return res.status(404).json({ success: false, message: 'Customer not found' });
+        if (!customer) return next(new ApiError(404, 'Customer not found' ));
 
         const isGuest = req.user._id === '000000000000000000000000';
         if (!isGuest && req.user.role !== 'admin' && req.user.role !== 'superAdmin') {
             const ownerId = customer.createdBy?.toString();
             if (ownerId && ownerId !== req.user._id.toString()) {
-                return res.status(403).json({ success: false, message: 'Access denied' });
+                return next(new ApiError(403, 'Access denied' ));
             }
         }
 
@@ -319,10 +311,7 @@ const updateCustomer = async (req, res) => {
         await customer.save();
 
         res.json({ success: true, message: 'Customer updated', data: customer });
-    } catch (error) {
-        console.error('updateCustomer error:', error);
-        res.status(500).json({ success: false, message: error.message || 'Server error' });
-    }
+    } catch (error) { next(error); }
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -330,10 +319,10 @@ const updateCustomer = async (req, res) => {
 // @route   POST /api/customers/:id/documents
 // @access  Private
 // ─────────────────────────────────────────────────────────────────────────────
-const uploadDocuments = async (req, res) => {
+const uploadDocuments = async (req, res, next) => {
     try {
         const customer = await Customer.findOne({ _id: req.params.id, isDeleted: { $ne: true } });
-        if (!customer) return res.status(404).json({ success: false, message: 'Customer not found' });
+        if (!customer) return next(new ApiError(404, 'Customer not found' ));
 
         const folder = `belwin-jewels/customers/${customer.customerId}`;
         const files = req.files || {};
@@ -363,79 +352,67 @@ const uploadDocuments = async (req, res) => {
         addAudit(customer, 'DOCUMENTS_UPDATED', req.user);
         await customer.save();
         res.json({ success: true, message: 'Documents updated', data: customer });
-    } catch (error) {
-        console.error('uploadDocuments error:', error);
-        res.status(500).json({ success: false, message: 'Server error' });
-    }
+    } catch (error) { next(error); }
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
 // @desc    KYC workflow
 // ─────────────────────────────────────────────────────────────────────────────
-const kycVerify = async (req, res) => {
+const kycVerify = async (req, res, next) => {
     try {
         const customer = await Customer.findOne({ _id: req.params.id, isDeleted: { $ne: true } });
-        if (!customer) return res.status(404).json({ success: false, message: 'Customer not found' });
+        if (!customer) return next(new ApiError(404, 'Customer not found' ));
 
         const next = {
             'Customer Approval Pending': 'KYC Verification Pending',
             'KYC Verification Pending':  'KYC Verified',
         }[customer.status];
 
-        if (!next) return res.status(400).json({ success: false, message: 'Invalid status transition' });
+        if (!next) return next(new ApiError(400, 'Invalid status transition' ));
 
         customer.status = next;
         addAudit(customer, `STATUS_CHANGED_TO_${next.replace(/ /g,'_').toUpperCase()}`, req.user);
         await customer.save();
         res.json({ success: true, message: `Status updated to ${next}`, data: customer });
-    } catch (error) {
-        console.error('kycVerify error:', error);
-        res.status(500).json({ success: false, message: 'Server error' });
-    }
+    } catch (error) { next(error); }
 };
 
-const approveCustomer = async (req, res) => {
+const approveCustomer = async (req, res, next) => {
     try {
         const customer = await Customer.findOne({ _id: req.params.id, isDeleted: { $ne: true } });
-        if (!customer) return res.status(404).json({ success: false, message: 'Customer not found' });
-        if (customer.status !== 'KYC Verified') return res.status(400).json({ success: false, message: 'Not KYC Verified' });
+        if (!customer) return next(new ApiError(404, 'Customer not found' ));
+        if (customer.status !== 'KYC Verified') return next(new ApiError(400, 'Not KYC Verified' ));
 
         customer.status = 'Approved';
         addAudit(customer, 'APPROVED', req.user);
         await customer.save();
         res.json({ success: true, message: 'Customer approved', data: customer });
-    } catch (error) {
-        console.error('approveCustomer error:', error);
-        res.status(500).json({ success: false, message: 'Server error' });
-    }
+    } catch (error) { next(error); }
 };
 
-const rejectCustomer = async (req, res) => {
+const rejectCustomer = async (req, res, next) => {
     try {
         const { reason } = req.body;
         const customer = await Customer.findOne({ _id: req.params.id, isDeleted: { $ne: true } });
-        if (!customer) return res.status(404).json({ success: false, message: 'Customer not found' });
+        if (!customer) return next(new ApiError(404, 'Customer not found' ));
 
         customer.status = 'Rejected';
         customer.rejectionReason = reason;
         addAudit(customer, 'REJECTED', req.user, reason);
         await customer.save();
         res.json({ success: true, message: 'Customer rejected', data: customer });
-    } catch (error) {
-        console.error('rejectCustomer error:', error);
-        res.status(500).json({ success: false, message: 'Server error' });
-    }
+    } catch (error) { next(error); }
 };
 
-const deleteCustomer = async (req, res) => {
+const deleteCustomer = async (req, res, next) => {
     try {
         const { hardDelete, deleteReason = '' } = req.query;
         const customer = await Customer.findOne({ _id: req.params.id, isDeleted: { $ne: true } });
-        if (!customer) return res.status(404).json({ success: false, message: 'Customer not found' });
+        if (!customer) return next(new ApiError(404, 'Customer not found' ));
 
         if (hardDelete === 'true') {
             if (req.user.role !== 'superAdmin') {
-                return res.status(403).json({ success: false, message: 'Hard delete requires Super Admin privileges' });
+                return next(new ApiError(403, 'Hard delete requires Super Admin privileges' ));
             }
             // Use fixed folder names for safety or stored IDs
             const folder = `belwin-jewels/customers/${customer.customerId}`;
@@ -457,9 +434,9 @@ const deleteCustomer = async (req, res) => {
     } catch (error) {
         console.error('deleteCustomer error:', error);
         if (error.name === 'CastError') {
-            return res.status(400).json({ success: false, message: 'Invalid customer ID format' });
+            return next(new ApiError(400, 'Invalid customer ID format' ));
         }
-        res.status(500).json({ success: false, message: error.message || 'Server error' });
+        next(new ApiError(500, error.message || 'Server error' ));
     }
 };
 
@@ -468,30 +445,27 @@ const deleteCustomer = async (req, res) => {
 // @route   GET /api/customers/:id/audit
 // @access  Private/Admin
 // ─────────────────────────────────────────────────────────────────────────────
-const getAuditLog = async (req, res) => {
+const getAuditLog = async (req, res, next) => {
     try {
         const customer = await Customer
             .findOne({ _id: req.params.id })
             .populate('auditLog.performedBy', 'username role')
             .select('customerId customerName auditLog');
 
-        if (!customer) return res.status(404).json({ success: false, message: 'Customer not found' });
+        if (!customer) return next(new ApiError(404, 'Customer not found' ));
 
         res.json({ success: true, data: customer });
-    } catch (error) {
-        console.error('getAuditLog error:', error);
-        res.status(500).json({ success: false, message: 'Server error' });
-    }
+    } catch (error) { next(error); }
 };
 
-const getNextCustomerId = async (req, res) => {
+const getNextCustomerId = async (req, res, next) => {
     try {
         const counter = await Counter.findOne({ _id: 'customerId' });
         const nextSeq = (counter?.seq || 0) + 1;
         const customerId = `CUST${String(nextSeq).padStart(6, '0')}`;
         res.json({ success: true, customerId });
     } catch (error) {
-        res.status(500).json({ success: false, message: 'Server error' });
+        next(new ApiError(500, 'Server error' ));
     }
 };
 
@@ -500,7 +474,7 @@ const getNextCustomerId = async (req, res) => {
 // @route   GET /api/customers/pending
 // @access  Private
 // ─────────────────────────────────────────────────────────────────────────────
-const getPendingCustomers = async (req, res) => {
+const getPendingCustomers = async (req, res, next) => {
     try {
         const query = { approvalStatus: 'Pending', isDeleted: { $ne: true } };
         const isGuest = req.user._id === '000000000000000000000000';
@@ -514,10 +488,7 @@ const getPendingCustomers = async (req, res) => {
             .lean();
 
         res.json({ success: true, data: customers });
-    } catch (error) {
-        console.error('getPendingCustomers error:', error);
-        res.status(500).json({ success: false, message: 'Server error' });
-    }
+    } catch (error) { next(error); }
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -525,7 +496,7 @@ const getPendingCustomers = async (req, res) => {
 // @route   PUT /api/customers/approve/:customerId
 // @access  Private
 // ─────────────────────────────────────────────────────────────────────────────
-const approveCustomerByApprovalId = async (req, res) => {
+const approveCustomerByApprovalId = async (req, res, next) => {
     try {
         const { customerId } = req.params;
         const mongoose = require('mongoose');
@@ -539,11 +510,11 @@ const approveCustomerByApprovalId = async (req, res) => {
 
         const customer = await Customer.findOne(query);
         if (!customer) {
-            return res.status(404).json({ success: false, message: 'Customer not found' });
+            return next(new ApiError(404, 'Customer not found' ));
         }
 
         if (customer.approvalStatus === 'Approved') {
-            return res.status(400).json({ success: false, message: 'Customer is already approved' });
+            return next(new ApiError(400, 'Customer is already approved' ));
         }
 
         // Update fields
@@ -558,10 +529,7 @@ const approveCustomerByApprovalId = async (req, res) => {
         await customer.save();
 
         res.json({ success: true, message: 'Customer approved successfully', data: customer });
-    } catch (error) {
-        console.error('approveCustomerByApprovalId error:', error);
-        res.status(500).json({ success: false, message: 'Server error' });
-    }
+    } catch (error) { next(error); }
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -569,7 +537,7 @@ const approveCustomerByApprovalId = async (req, res) => {
 // @route   PUT /api/customers/reject/:customerId
 // @access  Private
 // ─────────────────────────────────────────────────────────────────────────────
-const rejectCustomerByApprovalId = async (req, res) => {
+const rejectCustomerByApprovalId = async (req, res, next) => {
     try {
         const { customerId } = req.params;
         const { reason } = req.body;
@@ -584,11 +552,11 @@ const rejectCustomerByApprovalId = async (req, res) => {
 
         const customer = await Customer.findOne(query);
         if (!customer) {
-            return res.status(404).json({ success: false, message: 'Customer not found' });
+            return next(new ApiError(404, 'Customer not found' ));
         }
 
         if (customer.approvalStatus === 'Rejected') {
-            return res.status(400).json({ success: false, message: 'Customer is already rejected' });
+            return next(new ApiError(400, 'Customer is already rejected' ));
         }
 
         // Update fields
@@ -603,10 +571,7 @@ const rejectCustomerByApprovalId = async (req, res) => {
         await customer.save();
 
         res.json({ success: true, message: 'Customer rejected successfully', data: customer });
-    } catch (error) {
-        console.error('rejectCustomerByApprovalId error:', error);
-        res.status(500).json({ success: false, message: 'Server error' });
-    }
+    } catch (error) { next(error); }
 };
 
 module.exports = {
