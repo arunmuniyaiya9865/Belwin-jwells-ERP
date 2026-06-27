@@ -31,6 +31,12 @@ const getCustomerLedger = async (req, res, next) => {
         // Or we can just grab the first one (most typical in this flow)
         const activeLoan = loans.length > 0 ? loans[loans.length - 1] : null;
         const activeScheme = goldSchemes.length > 0 ? goldSchemes[goldSchemes.length - 1] : null;
+        
+        let closureDetails = null;
+        if (activeLoan) {
+            const LoanClosure = require('../models/LoanClosure');
+            closureDetails = await LoanClosure.findOne({ loanId: activeLoan.loanId });
+        }
 
         // Dynamic Calculations
         let totalPrincipalCollected = 0;
@@ -132,6 +138,13 @@ const getCustomerLedger = async (req, res, next) => {
                     loanStatus: activeLoan.status,
                     employeeName: activeLoan.employeeName || 'System',
                     approvedBy: activeLoan.employeeName || 'Admin'
+                } : null,
+                closureDetails: closureDetails ? {
+                    closureId: closureDetails.closureId,
+                    closureType: closureDetails.closureType,
+                    closureDate: closureDetails.closureDate,
+                    closedBy: closureDetails.closedBy,
+                    closureRemarks: closureDetails.closureRemarks
                 } : null,
                 payments: mappedPayments,
                 financialSummary

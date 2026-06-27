@@ -215,7 +215,7 @@ const CustomerLedger = () => {
                                             </h3>
                                             {ledgerData.loan.loanStatus === 'Closed' && (
                                                 <p className="text-xs text-text-secondary mt-1">
-                                                    {ledgerData.loan.loanEndDate ? formatDate(ledgerData.loan.loanEndDate) : 'Date Not Tracked in Schema'}
+                                                    {ledgerData.closureDetails ? formatDate(ledgerData.closureDetails.closureDate) : (ledgerData.loan.loanEndDate ? formatDate(ledgerData.loan.loanEndDate) : 'Date Not Tracked in Schema')}
                                                 </p>
                                             )}
                                         </div>
@@ -315,7 +315,23 @@ const CustomerLedger = () => {
                                         <p className="text-xs text-text-secondary uppercase tracking-wider">Approval Date</p>
                                         <p className="font-semibold text-text-primary mt-1 text-gray-500 italic">Not Tracked in Schema</p>
                                     </div>
-                                    <div className="col-span-2">
+                                    {ledgerData.closureDetails && (
+                                        <>
+                                            <div>
+                                                <p className="text-xs text-text-secondary uppercase tracking-wider">Closure Date</p>
+                                                <p className="font-semibold text-green-400 mt-1">{formatDate(ledgerData.closureDetails.closureDate)}</p>
+                                            </div>
+                                            <div>
+                                                <p className="text-xs text-text-secondary uppercase tracking-wider">Closure Type</p>
+                                                <p className="font-semibold text-green-400 mt-1">{ledgerData.closureDetails.closureType}</p>
+                                            </div>
+                                            <div className="col-span-2 sm:col-span-1">
+                                                <p className="text-xs text-text-secondary uppercase tracking-wider">Closed By</p>
+                                                <p className="font-semibold text-green-400 mt-1">{ledgerData.closureDetails.closedBy}</p>
+                                            </div>
+                                        </>
+                                    )}
+                                    <div className="col-span-2 sm:col-span-3 border-t border-gray-700/50 pt-4 mt-2">
                                         <p className="text-xs text-text-secondary uppercase tracking-wider">Approved By</p>
                                         <p className="font-semibold text-text-primary mt-1">{ledgerData.loan.approvedBy}</p>
                                     </div>

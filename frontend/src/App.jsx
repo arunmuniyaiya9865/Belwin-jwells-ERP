@@ -12,6 +12,7 @@ import ProvideLoan from './pages/ProvideLoan';
 import EditLoan from './pages/EditLoan';
 import CustomerHistory from './pages/CustomerHistory';
 import CustomerLedger from './pages/CustomerLedger';
+import LoanClosure from './pages/LoanClosure';
 import RepledgingChangeStatus from './pages/RepledgingChangeStatus';
 import TopUpLoan from './pages/TopUpLoan';
 import ReceivePayment from './pages/ReceivePayment';
@@ -49,6 +50,7 @@ function App() {
             <Route path="/provide-loan" element={<ProvideLoan />} />
             <Route path="/edit-loan" element={<EditLoan />} />
             <Route path="/customer-history" element={<CustomerHistory />} />
+            <Route path="/loan-closure" element={<LoanClosure />} />
             <Route path="/repledging-change-status" element={<RepledgingChangeStatus />} />
             <Route path="/top-up-loan" element={<TopUpLoan />} />
             <Route path="/receive-payment" element={<ReceivePayment />} />

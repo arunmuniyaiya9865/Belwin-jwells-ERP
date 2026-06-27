@@ -51,6 +51,7 @@ const Header = () => {
         { name: 'Provide Loan' },
         { name: 'Edit Loan' },
         { name: 'Customer History' },
+        { name: 'Loan Closure' },
         { name: 'Repledging & Change Status' },
         { name: 'Top up Loan' }
       ]

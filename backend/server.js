@@ -45,6 +45,7 @@ const callLogRoutes = require('./routes/callLogRoutes');
 const goldSchemeRoutes = require('./routes/goldSchemeRoutes');
 const provideLoanRoutes = require('./routes/provideLoanRoutes');
 const customerLedgerRoutes = require('./routes/customerLedgerRoutes');
+const loanClosureRoutes = require('./routes/loanClosureRoutes');
 
 app.use('/api/auth',      authRoutes);
 app.use('/api/employees', employeeRoutes);
@@ -67,6 +68,7 @@ app.use('/api/calls', callLogRoutes);
 app.use('/api/gold-schemes', goldSchemeRoutes);
 app.use('/api/provide-loan', provideLoanRoutes);
 app.use('/api/customer-ledger', customerLedgerRoutes);
+app.use('/api/loan-closure', loanClosureRoutes);
 
 app.get('/api/health', (req, res) => {
     res.status(200).json({ status: 'ok', message: 'API is running' });
