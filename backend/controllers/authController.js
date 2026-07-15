@@ -16,9 +16,16 @@ const loginUser = async (req, res, next) => {
     const { username, password } = req.body;
 
     try {
-        const user = await User.findOne({ username }).populate('employeeId');
+        const trimmedUsername = username ? username.trim() : '';
+        const user = await User.findOne({ username: trimmedUsername }).populate('employeeId');
 
         if (user && (await bcrypt.compare(password, user.password))) {
+            
+            // Inactive account check
+            if (user.employeeId && user.employeeId.status === 'Inactive') {
+                return next(new ApiError(401, 'Your account is inactive. Please contact the administrator.'));
+            }
+
             res.json({
                 _id: user._id,
                 username: user.username,

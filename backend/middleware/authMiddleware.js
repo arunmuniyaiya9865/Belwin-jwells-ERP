@@ -4,29 +4,81 @@ const User = require('../models/User');
 const protect = async (req, res, next) => {
     let token;
 
-    if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
+    if (
+        req.headers.authorization &&
+        req.headers.authorization.startsWith('Bearer')
+    ) {
         try {
             token = req.headers.authorization.split(' ')[1];
+            console.log('[Auth Middleware] Authorization header:', req.headers.authorization);
+
             const decoded = jwt.verify(token, process.env.JWT_SECRET);
-            req.user = await User.findById(decoded.id).select('-password');
+            console.log('[Auth Middleware] Decoded JWT:', decoded);
+
+            req.user = await User.findById(decoded.id)
+                .populate('employeeId')
+                .select('-password');
+
+            if (!req.user) {
+                console.log('[Auth Middleware] User not found for ID:', decoded.id);
+                return res.status(401).json({
+                    success: false,
+                    message: 'User not found'
+                });
+            }
+
+            console.log('[Auth Middleware] User authorized:', req.user._id, 'Role:', req.user.role);
             next();
+
         } catch (error) {
             console.error(error);
-            res.status(401).json({ message: 'Not authorized, token failed' });
+
+            return res.status(401).json({
+                success: false,
+                message: 'Not authorized, token failed'
+            });
         }
     }
 
     if (!token) {
-        res.status(401).json({ message: 'Not authorized, no token' });
+        return res.status(401).json({
+            success: false,
+            message: 'Not authorized, no token'
+        });
     }
 };
 
 const admin = (req, res, next) => {
     if (req.user && req.user.role === 'admin') {
-        next();
-    } else {
-        res.status(401).json({ message: 'Not authorized as an admin' });
+        return next();
     }
+
+    return res.status(401).json({
+        success: false,
+        message: 'Not authorized as an admin'
+    });
 };
 
-module.exports = { protect, admin };
+const hr = (req, res, next) => {
+    if (req.user && req.user.role === 'hr') {
+        return next();
+    }
+
+    return res.status(401).json({
+        success: false,
+        message: 'Not authorized as HR'
+    });
+};
+
+const authorize = (...roles) => (req, res, next) => {
+    if (req.user && roles.includes(req.user.role)) {
+        return next();
+    }
+
+    return res.status(401).json({
+        success: false,
+        message: 'Not authorized for this action'
+    });
+};
+
+module.exports = { protect, admin, hr, authorize };

@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const { protect } = require('../middleware/authMiddleware');
 const {
     createGoldScheme,
     getGoldSchemes,
@@ -8,21 +9,11 @@ const {
     deleteGoldScheme
 } = require('../controllers/goldSchemeController');
 
-const guestUser = (req, res, next) => {
-    if (!req.user) {
-        req.user = {
-            _id: '000000000000000000000000',
-            username: 'employee-portal',
-            role: 'employee',
-        };
-    }
-    next();
-};
 
-router.post('/', guestUser, createGoldScheme);
-router.get('/', guestUser, getGoldSchemes);
-router.get('/customer/:customerId', guestUser, getGoldSchemeByCustomer);
-router.put('/:id', guestUser, updateGoldScheme);
-router.delete('/:id', guestUser, deleteGoldScheme);
+router.post('/', protect, createGoldScheme);
+router.get('/', protect, getGoldSchemes);
+router.get('/customer/:customerId', protect, getGoldSchemeByCustomer);
+router.put('/:id', protect, updateGoldScheme);
+router.delete('/:id', protect, deleteGoldScheme);
 
 module.exports = router;

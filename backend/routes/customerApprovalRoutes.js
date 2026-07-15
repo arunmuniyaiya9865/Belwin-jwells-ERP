@@ -1,30 +1,27 @@
 const express = require('express');
 const router = express.Router();
-const { searchCustomer, getStatus, getDebugInfo } = require('../controllers/customerApprovalController');
+const { protect } = require('../middleware/authMiddleware');
+const { searchCustomer, getStatus, getDebugInfo, getPendingCustomers, handleApprovalAction } = require('../controllers/customerApprovalController');
 
 // Guest user middleware (consistent with existing customer routes)
-const guestUser = (req, res, next) => {
-    if (!req.user) {
-        req.user = {
-            _id: '000000000000000000000000',
-            username: 'employee-portal',
-            role: 'employee',
-        };
-    }
-    next();
-};
 
 /**
  * Requirement 8: Route Registration
  */
 
+// GET /api/customer-approval/pending
+router.get('/pending', protect, getPendingCustomers);
+
+// POST /api/customer-approval/action/:customerId
+router.post('/action/:customerId', protect, handleApprovalAction);
+
 // GET /api/customer-approval/search?customerId=...&branchId=...
-router.get('/search', guestUser, searchCustomer);
+router.get('/search', protect, searchCustomer);
 
 // GET /api/customer-approval/status/:customerId
-router.get('/status/:customerId', guestUser, getStatus);
+router.get('/status/:customerId', protect, getStatus);
 
 // GET /api/customer-approval/debug/:customerId
-router.get('/debug/:customerId', guestUser, getDebugInfo);
+router.get('/debug/:customerId', protect, getDebugInfo);
 
 module.exports = router;

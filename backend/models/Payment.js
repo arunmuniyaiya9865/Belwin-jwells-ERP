@@ -34,4 +34,8 @@ paymentSchema.pre('save', async function () {
   }
 });
 
+// ── Indexes for report performance ─────────────────────────────────────────
+paymentSchema.index({ paymentDate: -1, paymentMode: 1 });
+paymentSchema.index({ collectedBy: 1 });
+
 module.exports = mongoose.model('Payment', paymentSchema);

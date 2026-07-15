@@ -1,10 +1,10 @@
-import axios from 'axios';
+import api from './api';
 
-const API_URL = 'http://localhost:5000/api/loan-closure';
+const API_URL = '/loan-closure';
 
 export const getClosureDetails = async (loanId) => {
     try {
-        const response = await axios.get(`${API_URL}/${loanId}`);
+        const response = await api.get(`${API_URL}/${loanId}`);
         return response.data;
     } catch (error) {
         throw error.response?.data || { success: false, message: 'Server error' };
@@ -13,7 +13,7 @@ export const getClosureDetails = async (loanId) => {
 
 export const processClosure = async (loanId, closureData) => {
     try {
-        const response = await axios.post(`${API_URL}/${loanId}`, closureData);
+        const response = await api.post(`${API_URL}/${loanId}`, closureData);
         return response.data;
     } catch (error) {
         throw error.response?.data || { success: false, message: 'Server error' };

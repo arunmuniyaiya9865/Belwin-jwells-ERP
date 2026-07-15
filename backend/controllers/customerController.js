@@ -1,5 +1,6 @@
 const ApiError = require('../utils/ApiError');
-const { Customer, Counter } = require('../models/Customer');
+const { Customer } = require('../models/Customer');
+const Counter = require('../models/Counter');
 const { deleteFromCloudinary } = require('../config/cloudinary');
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -98,10 +99,10 @@ const createCustomer = async (req, res, next) => {
 
         const {
             customerName, guardianName, dateOfBirth, age, gender,
-            mobileNumber, alternateNumber, aadhaarNumber, panNumber,
-            doorStreet, area, city, postalCode,
+            mobileNumber, alternateNumber, email, aadhaarNumber, panNumber,
+            doorStreet, area, city, district, state, postalCode,
             permanentAddress, temporaryAddress, voterId, occupation,
-            remarks, proof2Name,
+            remarks, proof2Name, proof2Number,
             customerPhotoUrl, customerPhotoPublicId,
             aadhaarDocumentUrl, aadhaarDocumentPublicId,
             proof2DocumentUrl, proof2DocumentPublicId,
@@ -138,10 +139,10 @@ const createCustomer = async (req, res, next) => {
         const customer = new Customer({
             customerId, // Manually set generated ID
             customerName, guardianName, dateOfBirth, age, gender,
-            mobileNumber, alternateNumber, aadhaarNumber, panNumber,
-            doorStreet, area, city, postalCode,
+            mobileNumber, alternateNumber, email, aadhaarNumber, panNumber,
+            doorStreet, area, city, district, state, postalCode,
             permanentAddress, temporaryAddress, voterId, occupation,
-            remarks, proof2Name,
+            remarks, proof2Name, proof2Number,
             customerPhotoUrl: photoUrl,
             customerPhotoPublicId: photoId,
             aadhaarDocumentUrl: aadhaarUrl,
@@ -151,13 +152,35 @@ const createCustomer = async (req, res, next) => {
             status: 'Customer Approval Pending',
             employeeId: req.user._id,
             createdBy: req.user._id,
+            branchId: req.user.branch || req.user.branchId || null,
+            branchName: req.user.branchName || '',
             // Initialize workflow tracking
             approvalStatus: 'Pending',
-            workflowHistory: [{ status: 'Pending', date: new Date() }]
+            workflowHistory: [{
+                action: 'Customer Created',
+                performedBy: {
+                    id: req.user._id,
+                    employeeId: req.user.employeeId,
+                    name: req.user.name,
+                    role: req.user.role
+                },
+                date: new Date(),
+                remarks: 'Initial customer creation'
+            }]
         });
 
         addAudit(customer, 'CREATED', req.user);
-        await customer.save();
+        
+        console.log(`[DEBUG] About to save customer. ID: ${customer.customerId}`);
+        console.log(`[DEBUG] MongoDB Connection Host: ${require('mongoose').connection.host}, DB Name: ${require('mongoose').connection.name}`);
+        
+        try {
+            await customer.save();
+            console.log(`[DEBUG] Customer saved successfully! ID: ${customer._id}`);
+        } catch (saveError) {
+            console.error(`[DEBUG ERROR] Failed to save customer:`, saveError);
+            throw saveError;
+        }
 
         res.status(201).json({ success: true, message: 'Customer created successfully', data: customer });
     } catch (error) {
@@ -287,6 +310,13 @@ const updateCustomer = async (req, res, next) => {
         const customer = await Customer.findOne({ _id: req.params.id, isDeleted: { $ne: true } });
         if (!customer) return next(new ApiError(404, 'Customer not found' ));
 
+        if (customer.status === 'Approved' || customer.status === 'Rejected') {
+            return res.status(403).json({
+                success: false,
+                message: "Customer is locked. Editing is not allowed."
+            });
+        }
+
         const isGuest = req.user._id === '000000000000000000000000';
         if (!isGuest && req.user.role !== 'admin' && req.user.role !== 'superAdmin') {
             const ownerId = customer.createdBy?.toString();
@@ -298,15 +328,34 @@ const updateCustomer = async (req, res, next) => {
         const allowed = [
             'customerName','guardianName','dateOfBirth','age','gender',
             'mobileNumber','alternateNumber','aadhaarNumber','panNumber',
-            'doorStreet','area','city','postalCode',
+            'doorStreet','area','city','postalCode','district','state',
             'permanentAddress','temporaryAddress','voterId','occupation',
-            'remarks','proof2Name',
+            'remarks','proof2Name','proof2Number'
         ];
         allowed.forEach(field => {
             if (req.body[field] !== undefined) customer[field] = req.body[field];
         });
 
         if (!isGuest) customer.updatedBy = req.user._id;
+        
+        // Handle Correction Required resubmission
+        if (customer.status === 'Correction Required') {
+            customer.status = 'Customer Approval Pending';
+            customer.approvalStatus = 'Pending';
+            customer.adminRemarks = '';
+            customer.workflowHistory.push({
+                action: 'Customer Updated and Resubmitted',
+                performedBy: {
+                    id: req.user._id,
+                    employeeId: req.user.employeeId,
+                    name: req.user.name,
+                    role: req.user.role
+                },
+                date: new Date(),
+                remarks: 'Customer resubmitted after correction.'
+            });
+        }
+
         addAudit(customer, 'UPDATED', req.user);
         await customer.save();
 

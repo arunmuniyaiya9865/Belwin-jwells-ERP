@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const { protect } = require('../middleware/authMiddleware');
 const { createPayment, getPaymentsByLoan, getPaymentHistory, getAllPayments } = require('../controllers/paymentController');
 
 // ── Immutability enforcement ────────────────────────────────────────────────
@@ -14,23 +15,23 @@ const paymentImmutable = (req, res) => {
 };
 
 // POST /api/payments - Create a new payment
-router.post('/', createPayment);
+router.post('/', protect, createPayment);
 
 // GET /api/payments - Get all payments (global ledger)
-router.get('/', getAllPayments);
+router.get('/', protect, getAllPayments);
 
 // GET /api/payments/history/:loanId - Get loan + payment history (combined)
-router.get('/history/:loanId', getPaymentHistory);
+router.get('/history/:loanId', protect, getPaymentHistory);
 
 // GET /api/payments/loan/:loanId - Get payments for a loan
-router.get('/loan/:loanId', getPaymentsByLoan);
+router.get('/loan/:loanId', protect, getPaymentsByLoan);
 
 // ── Block all mutation routes explicitly ────────────────────────────────────
-router.put('/:id',    paymentImmutable);
+router.put('/:id', protect, paymentImmutable);
 router.patch('/:id',  paymentImmutable);
-router.delete('/:id', paymentImmutable);
-router.put('/',       paymentImmutable);
+router.delete('/:id', protect, paymentImmutable);
+router.put('/', protect, paymentImmutable);
 router.patch('/',     paymentImmutable);
-router.delete('/',    paymentImmutable);
+router.delete('/', protect, paymentImmutable);
 
 module.exports = router;

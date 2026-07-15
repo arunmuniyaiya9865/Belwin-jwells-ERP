@@ -1,11 +1,5 @@
 const mongoose = require('mongoose');
-
-// ── Auto-increment customer ID counter ───────────────────────────────────────
-const counterSchema = new mongoose.Schema({
-    _id: { type: String, required: true },
-    seq: { type: Number, default: 0 },
-});
-const Counter = mongoose.model('Counter', counterSchema);
+const Counter = require('./Counter');
 
 // ── Audit event sub-document ──────────────────────────────────────────────────
 const auditEventSchema = new mongoose.Schema({
@@ -22,7 +16,9 @@ const customerSchema = new mongoose.Schema({
     // Generated ID e.g. BWC-0001
     customerId: { type: String, unique: true, index: true },
 
-    // Removed branchId
+    // Branch snapshot at the time of creation
+    branchId: { type: mongoose.Schema.Types.ObjectId, ref: 'Branch' },
+    branchName: { type: String, trim: true, default: '' },
 
     // Personal
     customerName:  { type: String, required: true, trim: true },
@@ -32,8 +28,9 @@ const customerSchema = new mongoose.Schema({
     gender:        { type: String, enum: ['Male', 'Female', 'Other'], default: 'Male' },
 
     // Contact
-    mobileNumber:    { type: String, required: true, trim: true },
+    mobileNumber:    { type: String, required: true, trim: true, index: true },
     alternateNumber: { type: String, trim: true, default: '' },
+    email:           { type: String, trim: true, default: '' },
 
     // Identity
     aadhaarNumber: { type: String, trim: true, default: '' },
@@ -44,6 +41,8 @@ const customerSchema = new mongoose.Schema({
     doorStreet:        { type: String, required: true, trim: true },
     area:              { type: String, required: true, trim: true },
     city:              { type: String, trim: true, default: '' },
+    district:          { type: String, trim: true, default: '' },
+    state:             { type: String, trim: true, default: '' },
     postalCode:        { type: String, trim: true, default: '' },
     permanentAddress:  { type: String, trim: true, default: '' },
     temporaryAddress:  { type: String, trim: true, default: '' },
@@ -58,6 +57,7 @@ const customerSchema = new mongoose.Schema({
     aadhaarDocumentUrl:     { type: String, default: '' },
     aadhaarDocumentPublicId:{ type: String, default: '' },
     proof2Name:             { type: String, trim: true, default: '' },
+    proof2Number:           { type: String, trim: true, default: '' },
     proof2DocumentUrl:      { type: String, default: '' },
     proof2DocumentPublicId: { type: String, default: '' },
 
@@ -68,6 +68,7 @@ const customerSchema = new mongoose.Schema({
             'Customer Approval Pending',
             'KYC Verification Pending',
             'KYC Verified',
+            'Correction Required',
             'Approved',
             'Rejected',
         ],
@@ -92,13 +93,23 @@ const customerSchema = new mongoose.Schema({
         default: 'Pending',
         index: true
     },
-    approvedBy: { type: String, default: '' },
+    approvedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
     approvedDate: { type: Date, default: null },
     rejectedDate: { type: Date, default: null },
+    adminRemarks: { type: String, trim: true, default: '' },
+    approvalIpAddress: { type: String, default: '' },
+    approvalUserAgent: { type: String, default: '' },
     workflowHistory: [
         {
-            status: { type: String, required: true },
-            date: { type: Date, default: Date.now }
+            action: { type: String, required: true },
+            performedBy: {
+                id: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+                employeeId: { type: String },
+                name: { type: String },
+                role: { type: String }
+            },
+            date: { type: Date, default: Date.now },
+            remarks: { type: String, default: '' }
         }
     ],
 
@@ -152,6 +163,5 @@ customerSchema.pre('save', async function () {
 });
 
 module.exports = { 
-    Customer: mongoose.model('Customer', customerSchema),
-    Counter
+    Customer: mongoose.model('Customer', customerSchema)
 };

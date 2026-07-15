@@ -413,97 +413,507 @@ const getAccountSummaryReport = async (req, res, next) => {
   } catch (error) { next(error); }
 };
 
-// @desc    Get Today Collection Report
+// ═══════════════════════════════════════════════════════════════════════════════
+// TODAY COLLECTION REPORT — Reusable Helpers
+// ═══════════════════════════════════════════════════════════════════════════════
+// These helpers are shared across getTodayCollectionReport, getTodayCollectionById,
+// and exportTodayCollection to avoid duplicating aggregation logic.
+
+/**
+ * Build the initial $match query for today's collection pipeline.
+ * Handles date range (defaults to today), optional filters, and employee visibility.
+ *
+ * @param {Object} query - req.query parameters
+ * @param {Object|null} user - req.user (populated with employeeId)
+ * @returns {Object} MongoDB $match query
+ */
+const buildTodayCollectionMatch = (query, user) => {
+  const { fromDate, toDate, customerId, loanId, paymentMode, employee, fromTime, toTime } = query;
+
+  // Date range — default to today
+  let start, end;
+  if (fromDate || toDate) {
+    start = fromDate ? new Date(fromDate) : new Date();
+    start.setUTCHours(0, 0, 0, 0);
+    end = toDate ? new Date(toDate) : new Date(start);
+    end.setUTCHours(23, 59, 59, 999);
+  } else {
+    start = new Date();
+    start.setUTCHours(0, 0, 0, 0);
+    end = new Date();
+    end.setUTCHours(23, 59, 59, 999);
+  }
+
+  // Apply time-of-day filters within the date range
+  if (fromTime) {
+    const [h, m] = fromTime.split(':').map(Number);
+    start.setUTCHours(h, m, 0, 0);
+  }
+  if (toTime) {
+    const [h, m] = toTime.split(':').map(Number);
+    end.setUTCHours(h, m, 59, 999);
+  }
+
+  const matchQuery = {
+    paymentDate: { $gte: start, $lte: end }
+  };
+
+  // Optional direct filters (pre-lookup — these fields exist on Payment)
+  if (customerId) matchQuery.customerId = { $regex: new RegExp(customerId, 'i') };
+  if (loanId) matchQuery.loanId = { $regex: new RegExp(loanId, 'i') };
+  if (paymentMode) matchQuery.paymentMode = { $regex: new RegExp(paymentMode, 'i') };
+  if (employee) matchQuery.collectedBy = { $regex: new RegExp(employee, 'i') };
+
+  // ── Employee visibility scoping ──────────────────────────────────────────
+  // Restrict normal employees to their own collections only.
+  // Admin, HR, Super Admin, and Manager get full access.
+  if (user) {
+    const userRole = user.role;                      // 'admin' | 'hr' | 'employee'
+    const employeeDoc = user.employeeId;             // Populated Employee document
+    const employeeRole = employeeDoc?.role;           // 'Super Admin' | 'Manager' | 'Employee'
+
+    const isFullAccess = ['admin', 'hr'].includes(userRole)
+      || ['Super Admin', 'Manager'].includes(employeeRole);
+
+    if (!isFullAccess && employeeDoc) {
+      // FALLBACK: Payment schema lacks an employee ObjectId/code field.
+      // Matching on collectedBy (name string) until an employeeId field is added.
+      // TODO: Replace with Payment.employeeId once the schema is updated.
+      const fullName = employeeDoc.firstName + ' ' + employeeDoc.lastName;
+      matchQuery.collectedBy = { $regex: new RegExp('^' + fullName + '$', 'i') };
+    }
+  }
+
+  return matchQuery;
+};
+
+/**
+ * Build common $lookup, $unwind, and $addFields stages.
+ * Joins: customers, loans, employees (via collectedBy name match).
+ * Resolves branch using cascading priority.
+ *
+ * @returns {Array} Array of aggregation pipeline stages
+ */
+const buildCommonLookupStages = () => [
+  // 1. Lookup customer details
+  {
+    $lookup: {
+      from: 'customers',
+      localField: 'customerId',
+      foreignField: 'customerId',
+      as: 'customerDetails'
+    }
+  },
+  { $unwind: { path: '$customerDetails', preserveNullAndEmptyArrays: true } },
+
+  // 2. Lookup loan details (for schemeName, loanId enrichment)
+  {
+    $lookup: {
+      from: 'loans',
+      localField: 'loanId',
+      foreignField: 'loanId',
+      as: 'loanDetails'
+    }
+  },
+  { $unwind: { path: '$loanDetails', preserveNullAndEmptyArrays: true } },
+
+  // 3. Lookup employee details via collectedBy name match
+  // FALLBACK: collectedBy is a name string, not an ObjectId reference.
+  // TODO: Replace with direct ObjectId lookup once Payment schema has employeeId.
+  {
+    $lookup: {
+      from: 'employees',
+      let: { collectorName: { $ifNull: ['$collectedBy', ''] } },
+      pipeline: [
+        {
+          $match: {
+            $expr: {
+              $eq: [
+                { $concat: ['$firstName', ' ', '$lastName'] },
+                '$$collectorName'
+              ]
+            }
+          }
+        },
+        { $limit: 1 }
+      ],
+      as: 'employeeDetails'
+    }
+  },
+  { $unwind: { path: '$employeeDetails', preserveNullAndEmptyArrays: true } },
+
+  // 4. Resolve branch using cascading priority:
+  //    Payment.branch → Loan.branch → Employee.branch → Customer.branch → 'N/A'
+  {
+    $addFields: {
+      resolvedBranch: {
+        $ifNull: [
+          '$branch',                      // 1. Payment.branch (future-proof)
+          '$loanDetails.branch',           // 2. Loan.branch (future-proof)
+          '$employeeDetails.branch',       // 3. Employee.branch (currently available)
+          '$customerDetails.branch',       // 4. Customer.branch (future-proof)
+          'N/A'                            // 5. Fallback
+        ]
+      }
+    }
+  }
+];
+
+/**
+ * Build a post-lookup $match stage for search across 6 fields.
+ * Uses case-insensitive regex matching.
+ *
+ * @param {string|undefined} search - Search term from query params
+ * @returns {Object|null} $match stage or null if no search term
+ */
+const buildSearchStage = (search) => {
+  if (!search || !search.trim()) return null;
+
+  const regex = new RegExp(search.trim(), 'i');
+
+  return {
+    $match: {
+      $or: [
+        { paymentId: regex },                            // Receipt Number
+        { customerId: regex },                           // Customer ID
+        { 'customerDetails.customerName': regex },       // Customer Name
+        { 'customerDetails.mobileNumber': regex },       // Mobile Number
+        { loanId: regex },                               // Loan Number
+        { 'loanDetails.schemeName': regex }              // Scheme Name
+      ]
+    }
+  };
+};
+
+/**
+ * Build a $sort stage with dynamic field mapping and validation.
+ * Falls back to { paymentDate: -1, createdAt: -1 } if sortBy is invalid.
+ *
+ * @param {string|undefined} sortBy - Field name to sort by
+ * @param {string|undefined} order - 'asc' or 'desc'
+ * @returns {Object} $sort stage
+ */
+const buildSortStage = (sortBy, order) => {
+  // Whitelist: query param value → actual aggregation field
+  const sortFieldMap = {
+    paymentDate: 'paymentDate',
+    amount: 'paymentAmount',
+    customerName: 'customerDetails.customerName',
+    customerId: 'customerId',
+    paymentMode: 'paymentMode',
+    receiptNumber: 'paymentId'
+  };
+
+  const sortField = sortFieldMap[sortBy];
+  const sortOrder = order === 'asc' ? 1 : -1;
+
+  // Default sort: newest first
+  if (!sortField) {
+    return { $sort: { paymentDate: -1, createdAt: -1 } };
+  }
+
+  const sortSpec = { [sortField]: sortOrder };
+  // Add secondary sort for stable ordering
+  if (sortField !== 'createdAt') {
+    sortSpec.createdAt = -1;
+  }
+
+  return { $sort: sortSpec };
+};
+
+/**
+ * Build the summary branch stages for use inside $facet.
+ * Computes totals, payment-mode breakdowns, avg/max/min, and legacy fields.
+ *
+ * @returns {Array} Array of aggregation stages for the summary facet branch
+ */
+const buildSummaryFacet = () => [
+  {
+    $group: {
+      _id: null,
+      totalCollections: { $sum: 1 },
+      totalAmount: { $sum: '$paymentAmount' },
+      cash: {
+        $sum: {
+          $cond: [{ $regexMatch: { input: { $ifNull: ['$paymentMode', ''] }, regex: /^cash$/i } }, '$paymentAmount', 0]
+        }
+      },
+      upi: {
+        $sum: {
+          $cond: [{ $regexMatch: { input: { $ifNull: ['$paymentMode', ''] }, regex: /^upi$/i } }, '$paymentAmount', 0]
+        }
+      },
+      card: {
+        $sum: {
+          $cond: [{ $regexMatch: { input: { $ifNull: ['$paymentMode', ''] }, regex: /^card$/i } }, '$paymentAmount', 0]
+        }
+      },
+      bankTransfer: {
+        $sum: {
+          $cond: [{ $regexMatch: { input: { $ifNull: ['$paymentMode', ''] }, regex: /^bank.?transfer$/i } }, '$paymentAmount', 0]
+        }
+      },
+      cheque: {
+        $sum: {
+          $cond: [{ $regexMatch: { input: { $ifNull: ['$paymentMode', ''] }, regex: /^cheque$/i } }, '$paymentAmount', 0]
+        }
+      },
+      averageCollection: { $avg: '$paymentAmount' },
+      highestCollection: { $max: '$paymentAmount' },
+      lowestCollection: { $min: '$paymentAmount' },
+      // Legacy fields for backward compatibility
+      totalPrincipalCollection: { $sum: { $ifNull: ['$principalAmount', 0] } },
+      totalInterestCollection: { $sum: { $ifNull: ['$interestAmount', 0] } },
+      totalDocumentCharges: { $sum: { $ifNull: ['$penaltyAmount', 0] } },
+      uniqueCustomers: { $addToSet: '$customerId' }
+    }
+  }
+];
+
+/**
+ * Build the $project stage for today collection data output.
+ * Includes both new fields (per requirement) and legacy fields (backward compat).
+ *
+ * @returns {Object} $project stage
+ */
+const buildDataProjection = () => ({
+  $project: {
+    _id: 1,
+    receiptNumber: '$paymentId',
+    customerId: '$customerId',
+    customerName: { $ifNull: ['$customerDetails.customerName', 'Unknown Customer'] },
+    mobile: { $ifNull: ['$customerDetails.mobileNumber', ''] },
+    loanNumber: { $ifNull: ['$loanId', ''] },
+    schemeName: { $ifNull: ['$loanDetails.schemeName', ''] },
+    amount: '$paymentAmount',
+    principalAmount: { $ifNull: ['$principalAmount', 0] },
+    interestAmount: { $ifNull: ['$interestAmount', 0] },
+    documentCharges: { $ifNull: ['$penaltyAmount', 0] },
+    totalAmount: {
+      $add: [
+        { $ifNull: ['$principalAmount', 0] },
+        { $ifNull: ['$interestAmount', 0] },
+        { $ifNull: ['$penaltyAmount', 0] }
+      ]
+    },
+    paymentMode: '$paymentMode',
+    paymentType: '$paymentType',
+    collectedBy: { $ifNull: ['$collectedBy', ''] },
+    branch: '$resolvedBranch',
+    paymentDate: '$paymentDate',
+    paymentTime: { $dateToString: { format: '%H:%M:%S', date: '$paymentDate' } },
+    remarks: { $ifNull: ['$remarks', ''] },
+    status: { $literal: 'Success' },
+    transactionRef: { $ifNull: ['$transactionRef', ''] },
+    // ── Legacy fields (backward compatibility with existing frontend) ──
+    date: '$paymentDate',
+    loanId: '$loanId',
+    employeeName: { $ifNull: ['$collectedBy', ''] }
+  }
+});
+
+/**
+ * Build the pagination branch stages for use inside $facet.
+ * Applies sort → skip → limit → project.
+ *
+ * @param {number} page - Current page number (1-indexed)
+ * @param {number} limit - Records per page
+ * @param {Object} sortStage - $sort stage from buildSortStage()
+ * @returns {Array} Array of aggregation stages for the data facet branch
+ */
+const buildPaginationFacet = (page, limit, sortStage) => {
+  const skip = (page - 1) * limit;
+  return [
+    sortStage,
+    { $skip: skip },
+    { $limit: limit },
+    buildDataProjection()
+  ];
+};
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// TODAY COLLECTION REPORT — Controller Functions
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// @desc    Get Today Collection Report (paginated, with summary)
 // @route   GET /api/reports/today-collection
-// @access  Public
+// @access  Protected — Admin, HR, Employee (scoped)
 const getTodayCollectionReport = async (req, res, next) => {
   try {
-    const { fromDate, toDate, customerId, loanId, paymentMode } = req.query;
+    const { search, sortBy, order, branch } = req.query;
+    const page = Math.max(1, parseInt(req.query.page) || 1);
+    const limit = Math.max(1, Math.min(100, parseInt(req.query.limit) || 20));
 
-    let start, end;
+    // 1. Build initial match (date, filters, employee visibility)
+    const matchQuery = buildTodayCollectionMatch(req.query, req.user);
 
-    if (fromDate || toDate) {
-      start = fromDate ? new Date(fromDate) : new Date();
-      start.setHours(0, 0, 0, 0);
+    // 2. Build pipeline
+    const sortStage = buildSortStage(sortBy, order);
+    const searchStage = buildSearchStage(search);
 
-      end = toDate ? new Date(toDate) : new Date(start);
-      end.setHours(23, 59, 59, 999);
-    } else {
-      start = new Date();
-      start.setHours(0, 0, 0, 0);
-      end = new Date();
-      end.setHours(23, 59, 59, 999);
+    const pipeline = [
+      { $match: matchQuery },
+      ...buildCommonLookupStages()
+    ];
+
+    // Branch filter (post-lookup, since branch is resolved from Employee)
+    if (branch) {
+      pipeline.push({ $match: { resolvedBranch: { $regex: new RegExp(branch, 'i') } } });
     }
 
-    const matchQuery = {
-      paymentDate: {
-        $gte: start,
-        $lte: end
+    // Search (post-lookup, matches against joined fields)
+    if (searchStage) {
+      pipeline.push(searchStage);
+    }
+
+    // 3. $facet: summary + paginated data + total count in one query
+    pipeline.push({
+      $facet: {
+        summary: buildSummaryFacet(),
+        data: buildPaginationFacet(page, limit, sortStage),
+        count: [{ $count: 'total' }]
       }
+    });
+
+    const [result] = await Payment.aggregate(pipeline);
+
+    // 4. Format response
+    const summaryRaw = result.summary[0] || {};
+    const totalRecords = result.count[0]?.total || 0;
+    const totalPages = Math.ceil(totalRecords / limit) || 0;
+
+    const summary = {
+      // ── New fields (user requirement) ──
+      totalCollections: summaryRaw.totalCollections || 0,
+      totalAmount: summaryRaw.totalAmount || 0,
+      cash: summaryRaw.cash || 0,
+      upi: summaryRaw.upi || 0,
+      card: summaryRaw.card || 0,
+      bankTransfer: summaryRaw.bankTransfer || 0,
+      cheque: summaryRaw.cheque || 0,
+      averageCollection: Math.round((summaryRaw.averageCollection || 0) * 100) / 100,
+      highestCollection: summaryRaw.highestCollection || 0,
+      lowestCollection: summaryRaw.lowestCollection || 0,
+      // ── Legacy fields (backward compatibility) ──
+      totalCollectionAmount: summaryRaw.totalAmount || 0,
+      totalPrincipalCollection: summaryRaw.totalPrincipalCollection || 0,
+      totalInterestCollection: summaryRaw.totalInterestCollection || 0,
+      totalDocumentCharges: summaryRaw.totalDocumentCharges || 0,
+      totalCustomersCollected: summaryRaw.uniqueCustomers?.length || 0
     };
 
-    if (customerId) {
-      matchQuery.customerId = { $regex: new RegExp(customerId, 'i') };
-    }
-    if (loanId) {
-      matchQuery.loanId = { $regex: new RegExp(loanId, 'i') };
-    }
-    if (paymentMode) {
-      matchQuery.paymentMode = { $regex: new RegExp(paymentMode, 'i') };
+    res.json({
+      success: true,
+      generatedAt: new Date().toISOString(),
+      summary,
+      pagination: {
+        totalRecords,
+        totalPages,
+        currentPage: page
+      },
+      data: result.data,
+      tableData: result.data  // Backward compatibility with existing frontend
+    });
+  } catch (error) { next(error); }
+};
+
+// @desc    Get single collection record by receipt ID
+// @route   GET /api/reports/today-collection/:receiptId
+// @access  Protected — Admin, HR, Employee (scoped)
+const getTodayCollectionById = async (req, res, next) => {
+  try {
+    const { receiptId } = req.params;
+
+    if (!receiptId) {
+      return next(new ApiError(400, 'Receipt ID is required'));
     }
 
-    const payments = await Payment.aggregate([
-      { $match: matchQuery },
-      {
-        $lookup: {
-          from: 'customers',
-          localField: 'customerId',
-          foreignField: 'customerId',
-          as: 'customerDetails'
-        }
-      },
-      {
-        $unwind: { path: '$customerDetails', preserveNullAndEmptyArrays: true }
-      },
-      {
-        $project: {
-          date: '$paymentDate',
-          customerId: '$customerId',
-          customerName: { $ifNull: ['$customerDetails.customerName', 'Unknown Customer'] },
-          loanId: '$loanId',
-          principalAmount: { $ifNull: ['$principalAmount', 0] },
-          interestAmount: { $ifNull: ['$interestAmount', 0] },
-          documentCharges: { $ifNull: ['$penaltyAmount', 0] },
-          paymentMode: '$paymentMode',
-          employeeName: '$collectedBy'
-        }
-      },
-      {
-        $addFields: {
-          totalAmount: {
-            $add: ['$principalAmount', '$interestAmount', '$documentCharges']
-          }
-        }
-      },
-      { $sort: { date: -1 } }
-    ]);
+    const pipeline = [
+      { $match: { paymentId: receiptId } },
+      ...buildCommonLookupStages(),
+      buildDataProjection()
+    ];
 
-    const totalCustomers = new Set(payments.map(p => p.customerId)).size;
-    const totalPrincipal = payments.reduce((acc, curr) => acc + curr.principalAmount, 0);
-    const totalInterest = payments.reduce((acc, curr) => acc + curr.interestAmount, 0);
-    const totalDocumentCharges = payments.reduce((acc, curr) => acc + curr.documentCharges, 0);
-    const grandTotal = totalPrincipal + totalInterest + totalDocumentCharges;
+    const results = await Payment.aggregate(pipeline);
+
+    if (!results || results.length === 0) {
+      return next(new ApiError(404, 'Receipt not found'));
+    }
+
+    // ── Employee visibility check ──────────────────────────────────────────
+    const userRole = req.user.role;
+    const employeeDoc = req.user.employeeId;
+    const employeeRole = employeeDoc?.role;
+    const isFullAccess = ['admin', 'hr'].includes(userRole)
+      || ['Super Admin', 'Manager'].includes(employeeRole);
+
+    if (!isFullAccess && employeeDoc) {
+      // FALLBACK: Match collectedBy name string
+      // TODO: Replace with Payment.employeeId once the schema is updated.
+      const fullName = employeeDoc.firstName + ' ' + employeeDoc.lastName;
+      if ((results[0].collectedBy || '').toLowerCase() !== fullName.toLowerCase()) {
+        return next(new ApiError(403, 'Access denied: You can only view your own collections'));
+      }
+    }
 
     res.json({
-      summary: {
-        totalCustomersCollected: totalCustomers,
-        totalPrincipalCollection: totalPrincipal,
-        totalInterestCollection: totalInterest,
-        totalDocumentCharges: totalDocumentCharges,
-        totalCollectionAmount: grandTotal
-      },
-      tableData: payments
+      success: true,
+      generatedAt: new Date().toISOString(),
+      data: results[0]
     });
+  } catch (error) { next(error); }
+};
+
+// @desc    Export today's collection (all records, no pagination)
+// @route   GET /api/reports/today-collection/export
+// @access  Protected — Admin, HR, Employee (scoped)
+const exportTodayCollection = async (req, res, next) => {
+  try {
+    const { search, sortBy, order, branch, format } = req.query;
+
+    // 1. Build initial match (date, filters, employee visibility)
+    const matchQuery = buildTodayCollectionMatch(req.query, req.user);
+
+    // 2. Build pipeline (no pagination)
+    const sortStage = buildSortStage(sortBy, order);
+    const searchStage = buildSearchStage(search);
+
+    const pipeline = [
+      { $match: matchQuery },
+      ...buildCommonLookupStages()
+    ];
+
+    // Branch filter (post-lookup)
+    if (branch) {
+      pipeline.push({ $match: { resolvedBranch: { $regex: new RegExp(branch, 'i') } } });
+    }
+
+    // Search (post-lookup)
+    if (searchStage) {
+      pipeline.push(searchStage);
+    }
+
+    // Sort + project (no skip/limit for export)
+    pipeline.push(sortStage);
+    pipeline.push(buildDataProjection());
+
+    const data = await Payment.aggregate(pipeline);
+
+    // 3. Format-aware response (extensible for CSV/Excel in the future)
+    const exportFormat = (format || 'json').toLowerCase();
+
+    switch (exportFormat) {
+      // case 'csv':  // TODO: Implement CSV export using json2csv or similar
+      // case 'xlsx': // TODO: Implement Excel export using exceljs or similar
+      case 'json':
+      default:
+        return res.json({
+          success: true,
+          generatedAt: new Date().toISOString(),
+          totalRecords: data.length,
+          data
+        });
+    }
   } catch (error) { next(error); }
 };
 
@@ -955,6 +1365,8 @@ module.exports = {
   getRepledgeReport,
   getAccountSummaryReport,
   getTodayCollectionReport,
+  getTodayCollectionById,
+  exportTodayCollection,
   getDatewisePendingReport,
   getCashAssetsReport,
   getAuctionAccountsReport,

@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const { protect } = require('../middleware/authMiddleware');
 
 const { customerMultiUpload, memoryUpload } = require('../config/cloudinary');
 const {
@@ -48,37 +49,27 @@ const {
     rejectCustomerByApprovalId,
 } = require('../controllers/customerController');
 
-const guestUser = (req, res, next) => {
-    if (!req.user) {
-        req.user = {
-            _id: '000000000000000000000000', // placeholder ObjectId string
-            username: 'employee-portal',
-            role: 'employee',
-        };
-    }
-    next();
-};
 
 // ── Routes ─────────────────────────────────────────────────────────────────────
-router.get('/next-id', guestUser, getNextCustomerId);
-router.get('/search', guestUser, getCustomers);
-router.get('/filter', guestUser, getCustomers);
-router.get('/pending', guestUser, getPendingCustomers);
-router.put('/approve/:customerId', guestUser, approveCustomerByApprovalId);
-router.put('/reject/:customerId', guestUser, validateRejection, rejectCustomerByApprovalId);
+router.get('/next-id', protect, getNextCustomerId);
+router.get('/search', protect, getCustomers);
+router.get('/filter', protect, getCustomers);
+router.get('/pending', protect, getPendingCustomers);
+router.put('/approve/:customerId', protect, approveCustomerByApprovalId);
+router.put('/reject/:customerId', protect, validateRejection, rejectCustomerByApprovalId);
 
 /**
  * POST   /api/customers/upload -> Standalone upload (returns metadata)
  */
-router.post('/upload', memoryMiddleware, guestUser, uploadCustomerDocument);
+router.post('/upload', protect, memoryMiddleware, protect, uploadCustomerDocument);
 
 /**
  * POST   /api/customers      → Create customer (+ optional file uploads)
  * GET    /api/customers      → List / search / filter / paginate
  */
 router.route('/')
-    .post(memoryMiddleware, guestUser, validateCreateCustomer, createCustomer)
-    .get(guestUser, getCustomers);
+    .post(protect, memoryMiddleware, protect, validateCreateCustomer, createCustomer)
+    .get(protect, getCustomers);
 
 /**
  * GET    /api/customers/:id  → Single customer
@@ -86,33 +77,33 @@ router.route('/')
  * DELETE /api/customers/:id  → Soft delete
  */
 router.route('/:id')
-    .get(guestUser, getCustomerById)
-    .put(guestUser, validateUpdateCustomer, updateCustomer)
-    .delete(guestUser, deleteCustomer);
+    .get(protect, getCustomerById)
+    .put(protect, validateUpdateCustomer, updateCustomer)
+    .delete(protect, deleteCustomer);
 
 /**
  * POST   /api/customers/:id/documents  → Upload / replace Cloudinary files
  */
-router.post('/:id/documents', memoryMiddleware, guestUser, uploadDocuments);
+router.post('/:id/documents', protect, memoryMiddleware, protect, uploadDocuments);
 
 /**
  * PUT    /api/customers/:id/kyc-verify → KYC pipeline step
  */
-router.put('/:id/kyc-verify', guestUser, kycVerify);
+router.put('/:id/kyc-verify', protect, kycVerify);
 
 /**
  * PUT    /api/customers/:id/approve    → Approve customer
  */
-router.put('/:id/approve', guestUser, approveCustomer);
+router.put('/:id/approve', protect, approveCustomer);
 
 /**
  * PUT    /api/customers/:id/reject     → Reject with reason
  */
-router.put('/:id/reject', guestUser, validateRejection, rejectCustomer);
+router.put('/:id/reject', protect, validateRejection, rejectCustomer);
 
 /**
  * GET    /api/customers/:id/audit      → Full audit trail
  */
-router.get('/:id/audit', guestUser, getAuditLog);
+router.get('/:id/audit', protect, getAuditLog);
 
 module.exports = router;

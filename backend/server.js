@@ -18,8 +18,8 @@ const app = express();
 
 // Middleware
 app.use(cors());
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 app.use(morgan('dev'));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
@@ -46,6 +46,12 @@ const goldSchemeRoutes = require('./routes/goldSchemeRoutes');
 const provideLoanRoutes = require('./routes/provideLoanRoutes');
 const customerLedgerRoutes = require('./routes/customerLedgerRoutes');
 const loanClosureRoutes = require('./routes/loanClosureRoutes');
+const dashboardRoutes = require('./routes/dashboardRoutes');
+const attendanceRoutes = require('./routes/attendanceRoutes');
+const salaryRoutes = require('./routes/salaryRoutes');
+const rolesRoutes = require('./routes/rolesRoutes');
+const hrRoutes = require('./routes/hrRoutes');
+const searchRoutes = require('./routes/searchRoutes');
 
 app.use('/api/auth',      authRoutes);
 app.use('/api/employees', employeeRoutes);
@@ -69,6 +75,12 @@ app.use('/api/gold-schemes', goldSchemeRoutes);
 app.use('/api/provide-loan', provideLoanRoutes);
 app.use('/api/customer-ledger', customerLedgerRoutes);
 app.use('/api/loan-closure', loanClosureRoutes);
+app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/attendance', attendanceRoutes);
+app.use('/api/salary', salaryRoutes);
+app.use('/api/roles', rolesRoutes);
+app.use('/api/hr', hrRoutes);
+app.use('/api/search', searchRoutes);
 
 app.get('/api/health', (req, res) => {
     res.status(200).json({ status: 'ok', message: 'API is running' });
@@ -82,9 +94,12 @@ app.use(globalErrorHandler);
 const PORT = process.env.PORT || 5000;
 const MONGO_URI = process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/belwin_erp';
 
+const { initializeEmployeeIds } = require('./controllers/employeeController');
+
 mongoose.connect(MONGO_URI)
-    .then(() => {
+    .then(async () => {
         console.log('Connected to MongoDB');
+        await initializeEmployeeIds();
         app.listen(PORT, () => {
             console.log(`Server running on port ${PORT}`);
         });

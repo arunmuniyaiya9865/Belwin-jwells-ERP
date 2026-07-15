@@ -1,8 +1,9 @@
 const express = require('express');
 const router = express.Router();
+const { protect } = require('../middleware/authMiddleware');
 const GoldRequest = require('../models/GoldRequest');
 
-router.post('/', async (req, res) => {
+router.post('/', protect, async (req, res) => {
   try {
     const request = new GoldRequest(req.body);
     await request.save();
@@ -12,7 +13,7 @@ router.post('/', async (req, res) => {
   }
 });
 
-router.get('/', async (req, res) => {
+router.get('/', protect, async (req, res) => {
   try {
     const requests = await GoldRequest.find().sort({ createdAt: -1 });
     res.status(200).json({ success: true, data: requests });

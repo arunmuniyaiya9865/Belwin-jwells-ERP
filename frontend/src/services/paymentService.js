@@ -1,23 +1,23 @@
-import axios from 'axios';
+import api from './api';
 
-const API_URL = 'http://localhost:5000/api/payments';
+const API_URL = '/payments';
 
 export const createPayment = async (paymentData) => {
-  const response = await axios.post(API_URL, paymentData);
+  const response = await api.post(API_URL, paymentData);
   return response.data;
 };
 
 export const getPaymentsByLoan = async (loanId) => {
-  const response = await axios.get(`${API_URL}/loan/${loanId}`);
+  const response = await api.get(`${API_URL}/loan/${loanId}`);
   return response.data;
 };
 
 export const getPaymentHistory = async (loanId) => {
-  const response = await axios.get(`${API_URL}/history/${loanId}`);
+  const response = await api.get(`${API_URL}/history/${loanId}`);
   return response.data; // { loan: {}, payments: [] }
 };
 
 export const getAllPayments = async () => {
-  const response = await axios.get(API_URL);
+  const response = await api.get(API_URL);
   return response.data;
 };

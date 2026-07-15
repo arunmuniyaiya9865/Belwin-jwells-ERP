@@ -68,8 +68,66 @@ const getStatus = async (req, res, next) => {
     }
 };
 
+const getPendingCustomers = async (req, res, next) => {
+    try {
+        const query = { 
+            status: 'Customer Approval Pending', 
+            isDeleted: { $ne: true } 
+        };
+        console.log("Pending Query:", query);
+        const customers = await customerApprovalService.getPendingApprovals();
+        
+        const mappedCustomers = customers.map(c => {
+            const customerObj = c.toObject();
+            if (customerObj.createdBy && customerObj.createdBy.employeeId) {
+                const emp = customerObj.createdBy.employeeId;
+                customerObj.createdBy.name = `${emp.firstName || ''} ${emp.lastName || ''}`.trim();
+                customerObj.createdBy.employeeId = emp.employeeId; // the string ID like BEL-0001
+                customerObj.branchName = emp.branch || customerObj.branchName;
+            }
+            return customerObj;
+        });
+
+        res.json({ success: true, data: mappedCustomers });
+    } catch (error) {
+        next(new ApiError(error.status || 500, error.message || 'Server error'));
+    }
+};
+
+const handleApprovalAction = async (req, res, next) => {
+    try {
+        const { customerId } = req.params;
+        const { action, remarks, overrideDuplicate } = req.body;
+        const adminUser = req.user;
+        const ipAddress = req.ip || req.connection.remoteAddress;
+        const userAgent = req.get('user-agent');
+
+        if (adminUser.role !== 'admin' && adminUser.role !== 'superAdmin') {
+            return next(new ApiError(403, 'Only admins can perform approval actions'));
+        }
+
+        const customer = await customerApprovalService.processApprovalAction(
+            customerId, action, remarks, adminUser, overrideDuplicate, ipAddress, userAgent
+        );
+        
+        res.json({ success: true, message: `Customer ${action.toLowerCase()} successfully`, data: customer });
+    } catch (error) {
+        if (error.status === 409) {
+            return res.status(409).json({
+                success: false,
+                message: error.message,
+                duplicateType: error.duplicateType,
+                duplicates: error.duplicates
+            });
+        }
+        next(new ApiError(error.status || 500, error.message || 'Server error'));
+    }
+};
+
 module.exports = {
     searchCustomer,
     getStatus,
-    getDebugInfo
+    getDebugInfo,
+    getPendingCustomers,
+    handleApprovalAction
 };
