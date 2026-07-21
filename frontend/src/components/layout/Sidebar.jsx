@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { getCustomers } from '../../services/customerService';
 import {
   LayoutDashboard, Users, ChevronDown, ChevronRight, UserPlus,
   Settings, X, Gem, Database, Sliders, User, Network, Lock, IdCard, Award,
@@ -7,7 +8,7 @@ import {
   Upload, CheckCircle, ShieldCheck, FileSearch, ShieldBan, Plus,
   Briefcase, BookOpen, CreditCard, Download, FileEdit, ArrowRightLeft, Landmark, Banknote, ClipboardList,
   Wallet, LayoutGrid, Coins, Box, PhoneCall, PhoneForwarded, Send, History,
-  CalendarDays, UserCog, ClipboardCheck
+  CalendarDays, UserCog, ClipboardCheck, AlertTriangle
 } from 'lucide-react';
 
 const ADMIN_NAV = [
@@ -37,6 +38,7 @@ const ADMIN_NAV = [
     children: [
       { label: 'Customer List', icon: Users, path: '/admin/borrower/customer-list' },
       { label: 'Customer Approval', icon: CheckCircle, path: '/admin/borrower/customer-approval' },
+      { label: 'Approved Customer List', icon: UserCheck, path: '/admin/borrower/approved-customers' },
       { label: 'New Borrower', icon: UserPlus, path: '/admin/borrower/new' },
       { label: 'KYC Upload', icon: Upload, path: '/admin/borrower/kyc-upload' },
       { label: 'CIBIL Check', icon: ShieldCheck, path: '/admin/borrower/cibil-check' },
@@ -122,6 +124,7 @@ const EMPLOYEE_NAV = [
       { label: 'New Customer', icon: UserPlus, path: '/new-customer' },
       { label: 'Edit/Delete Customer', icon: FileEdit, path: '/edit-delete-customer' },
       { label: 'Customer Approval Pending', icon: ClipboardList, path: '/customer-approval-pending' },
+      { label: 'Correction Requests', icon: AlertTriangle, path: '/correction-requests', badge: 'correction' },
       { label: 'Aadhar Verification', icon: ShieldCheck, path: '/aadhar-verification' },
       { label: 'Customer Ledger', icon: BookOpen, path: '/customer-ledger' }
     ]
@@ -246,6 +249,33 @@ const Sidebar = ({ collapsed, setCollapsed, isMobile, onClose }) => {
   const role = user.role || 'employee';
   const isRoutingAdmin = role === 'admin' || role === 'Super Admin';
 
+  const [correctionCount, setCorrectionCount] = useState(0);
+
+  const fetchCorrectionCount = async () => {
+    if (isRoutingAdmin) return;
+    try {
+      const res = await getCustomers({ status: 'Correction Required', limit: 1 });
+      if (res?.success) {
+        setCorrectionCount(res.pagination.total);
+      }
+    } catch (error) {
+      console.error('Failed to fetch correction count:', error);
+    }
+  };
+
+  useEffect(() => {
+    fetchCorrectionCount();
+    window.addEventListener('refresh_correction_count', fetchCorrectionCount);
+    
+    // Poll every 60 seconds for real-time updates from Admin actions
+    const interval = setInterval(fetchCorrectionCount, 60000);
+    
+    return () => {
+      window.removeEventListener('refresh_correction_count', fetchCorrectionCount);
+      clearInterval(interval);
+    };
+  }, [isRoutingAdmin]);
+
   const NAV = isRoutingAdmin ? ADMIN_NAV : EMPLOYEE_NAV;
 
   const isActive = (path) => location.pathname === path;
@@ -339,7 +369,12 @@ const Sidebar = ({ collapsed, setCollapsed, isMobile, onClose }) => {
                           }`}
                         >
                           <CIcon size={16} className={childActive ? 'text-green-600' : 'text-gray-400'} strokeWidth={childActive ? 2.5 : 2} />
-                          <span className="text-xs">{child.label}</span>
+                          <span className="text-xs flex-1">{child.label}</span>
+                          {child.badge === 'correction' && correctionCount > 0 && (
+                            <span className="bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full shadow-sm animate-pulse min-w-[20px] text-center">
+                              {correctionCount > 99 ? '99+' : correctionCount}
+                            </span>
+                          )}
                         </button>
                       );
                     })}

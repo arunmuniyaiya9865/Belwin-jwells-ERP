@@ -16,12 +16,14 @@ import Attendance from './pages/admin/Attendance';
 import SalaryManagement from './pages/admin/SalaryManagement';
 import RolesPermissions from './pages/admin/RolesPermissions';
 import AdminCustomerApprovalPending from './pages/admin/CustomerApprovalPending';
+import AdminApprovedCustomerList from './pages/admin/ApprovedCustomerList';
 // Employee Pages
 import Dashboard from './pages/employee/main/Dashboard';
 import Login from './pages/employee/main/Login';
 import NewCustomer from './pages/employee/customer/NewCustomer';
 import EditDeleteCustomer from './pages/employee/customer/EditDeleteCustomer';
 import CustomerApprovalPending from './pages/employee/customer/CustomerApprovalPending';
+import CorrectionRequests from './pages/employee/customer/CorrectionRequests';
 import AadharVerification from './pages/employee/customer/AadharVerification';
 import ProvideLoan from './pages/employee/loan/ProvideLoan';
 import EditLoan from './pages/employee/loan/EditLoan';
@@ -79,6 +81,7 @@ function App() {
           {/* Placeholders for unfinished modules from sidebar */}
           <Route path="/admin/master/*" element={<ComingSoon />} />
           <Route path="/admin/loan-config/*" element={<ComingSoon />} />
+          <Route path="/admin/borrower/approved-customers" element={<AdminApprovedCustomerList />} />
           <Route path="/admin/borrower/*" element={<ComingSoon />} />
           <Route path="/admin/borrower/customer-approval" element={<AdminCustomerApprovalPending />} />
           <Route path="/admin/accounts/*" element={<ComingSoon />} />
@@ -95,9 +98,11 @@ function App() {
         {/* Employee Layout Routes */}
         <Route element={<ProtectedRoute role="employee"><AppLayout /></ProtectedRoute>}>
           <Route path="/employee-dashboard" element={<Dashboard />} />
+          <Route path="/schemes" element={<Schemes />} />
           <Route path="/new-customer" element={<NewCustomer />} />
           <Route path="/edit-delete-customer" element={<EditDeleteCustomer />} />
           <Route path="/customer-approval-pending" element={<CustomerApprovalPending />} />
+          <Route path="/correction-requests" element={<CorrectionRequests />} />
           <Route path="/aadhar-verification" element={<AadharVerification />} />
           <Route path="/customer-ledger" element={<CustomerLedger />} />
           <Route path="/provide-loan" element={<ProvideLoan />} />

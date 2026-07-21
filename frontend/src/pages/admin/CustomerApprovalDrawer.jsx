@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, CheckCircle, XCircle, AlertCircle, Clock, FileText, User, MapPin, Info, CreditCard, ShieldCheck, UserCheck } from 'lucide-react';
+import { X, CheckCircle, XCircle, AlertCircle, Clock, FileText, User, MapPin, Info, CreditCard, ShieldCheck, UserCheck, History } from 'lucide-react';
 import { format } from 'date-fns';
 
 const CustomerApprovalDrawer = ({ 
@@ -8,9 +8,11 @@ const CustomerApprovalDrawer = ({
     customer, 
     onApprove, 
     onReject, 
-    onSendBack 
+    onSendBack,
+    viewOnly = false
 }) => {
     const [remarks, setRemarks] = useState('');
+    const [selectedCorrectionFields, setSelectedCorrectionFields] = useState([]);
 
     // Admin Verification Checklist
     const [checklist, setChecklist] = useState({
@@ -31,6 +33,24 @@ const CustomerApprovalDrawer = ({
     };
 
     const isChecklistComplete = Object.values(checklist).every(Boolean);
+
+    const correctionOptions = [
+        { id: 'customerPhotoUrl', label: 'Customer Photo' },
+        { id: 'aadhaarDocumentUrl', label: 'Aadhaar Image' },
+        { id: 'proof2DocumentUrl', label: 'Additional Proof Document' },
+        { id: 'customerName', label: 'Customer Name' },
+        { id: 'mobileNumber', label: 'Mobile Number' },
+        { id: 'aadhaarNumber', label: 'Aadhaar Number' },
+        { id: 'doorStreet', label: 'Door/Street Address' },
+        { id: 'area', label: 'Area' },
+        { id: 'city', label: 'City' },
+    ];
+
+    const toggleCorrectionField = (fieldId) => {
+        setSelectedCorrectionFields(prev => 
+            prev.includes(fieldId) ? prev.filter(f => f !== fieldId) : [...prev, fieldId]
+        );
+    };
 
     return (
         <>
@@ -190,20 +210,20 @@ const CustomerApprovalDrawer = ({
                             <div className="grid grid-cols-3 gap-2">
                                 <span className="text-slate-500">Created By</span>
                                 <span className="col-span-2 font-medium text-slate-900">
-                                    {customer.createdBy?.name || customer.createdBy?.username || 'System'}
+                                    {customer.createdByEmployee?.employeeName || customer.createdBy?.name || customer.createdBy?.username || 'System'}
                                 </span>
                             </div>
                             <div className="grid grid-cols-3 gap-2">
                                 <span className="text-slate-500">Employee ID</span>
-                                <span className="col-span-2 font-medium text-slate-900">{customer.createdBy?.employeeId || 'N/A'}</span>
+                                <span className="col-span-2 font-medium text-slate-900">{customer.createdByEmployee?.employeeId || customer.createdBy?.employeeId || 'N/A'}</span>
                             </div>
                             <div className="grid grid-cols-3 gap-2">
-                                <span className="text-slate-500">Employee Name</span>
-                                <span className="col-span-2 font-medium text-slate-900">{customer.createdBy?.name || 'N/A'}</span>
+                                <span className="text-slate-500">Employee Role</span>
+                                <span className="col-span-2 font-medium text-slate-900 capitalize">{customer.createdByEmployee?.role || customer.createdBy?.role || 'N/A'}</span>
                             </div>
                             <div className="grid grid-cols-3 gap-2">
                                 <span className="text-slate-500">Branch</span>
-                                <span className="col-span-2 font-medium text-slate-900">{customer.branchName || customer.createdBy?.branchName || 'N/A'}</span>
+                                <span className="col-span-2 font-medium text-slate-900">{customer.createdByEmployee?.branchName || customer.branchName || customer.createdBy?.branchName || 'N/A'}</span>
                             </div>
                             <div className="grid grid-cols-3 gap-2">
                                 <span className="text-slate-500">Created Date</span>
@@ -233,14 +253,28 @@ const CustomerApprovalDrawer = ({
                             </div>
                             <div className="grid grid-cols-3 gap-2">
                                 <span className="text-slate-500">Approved By</span>
-                                <span className="col-span-2 font-medium text-slate-900">{customer.approvedBy?.name || customer.approvedBy || 'N/A'}</span>
+                                <span className="col-span-2 font-medium text-slate-900">
+                                    {customer.approvedByEmployee?.name || customer.approvedBy?.name || customer.approvedBy || 'N/A'}
+                                </span>
                             </div>
+                            {customer.approvedByEmployee?.employeeId && (
+                                <div className="grid grid-cols-3 gap-2">
+                                    <span className="text-slate-500">Approver ID</span>
+                                    <span className="col-span-2 font-medium text-slate-900">{customer.approvedByEmployee.employeeId}</span>
+                                </div>
+                            )}
                             <div className="grid grid-cols-3 gap-2">
                                 <span className="text-slate-500">Approved Date</span>
                                 <span className="col-span-2 font-medium text-slate-900">
                                     {customer.approvedDate ? format(new Date(customer.approvedDate), 'dd MMM yyyy, hh:mm a') : 'N/A'}
                                 </span>
                             </div>
+                            {customer.approvalIpAddress && (
+                                <div className="grid grid-cols-3 gap-2">
+                                    <span className="text-slate-500">IP Address</span>
+                                    <span className="col-span-2 font-medium text-slate-900 text-xs">{customer.approvalIpAddress}</span>
+                                </div>
+                            )}
                             <div className="grid grid-cols-3 gap-2 col-span-1 md:col-span-2">
                                 <span className="text-slate-500">Admin Remarks</span>
                                 <span className="col-span-2 font-medium text-slate-900">{customer.adminRemarks || 'N/A'}</span>
@@ -327,111 +361,151 @@ const CustomerApprovalDrawer = ({
                         </div>
                     )}
 
-                    {/* 7. Workflow Timeline */}
+                    {/* Workflow Timeline */}
                     <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
-                        <h3 className="font-semibold text-slate-800 flex items-center gap-2 mb-6 border-b pb-2">
-                            <Clock className="w-4 h-4 text-slate-500" />
-                            Workflow History
+                        <h3 className="font-semibold text-slate-800 flex items-center gap-2 mb-4 border-b pb-2">
+                            <History className="w-4 h-4 text-slate-500" />
+                            Workflow Timeline
                         </h3>
-                        <div className="relative pl-6 space-y-6 before:absolute before:inset-0 before:ml-7 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-transparent before:via-slate-300 before:to-transparent">
-                            {timeline.length === 0 ? (
-                                <p className="text-sm text-slate-500 italic">No timeline events found.</p>
-                            ) : (
-                                timeline.map((event, idx) => (
-                                    <div key={idx} className="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group is-active">
-                                        <div className="flex items-center justify-center w-6 h-6 rounded-full border border-white bg-slate-300 group-[.is-active]:bg-indigo-500 text-white group-[.is-active]:text-white shadow shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2">
-                                            <CheckCircle className="w-3 h-3" />
+                        {timeline.length > 0 ? (
+                            <div className="space-y-6 relative before:absolute before:inset-0 before:ml-5 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-transparent before:via-slate-300 before:to-transparent">
+                                {timeline.map((event, index) => (
+                                    <div key={index} className="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group is-active">
+                                        {/* Icon */}
+                                        <div className="flex items-center justify-center w-10 h-10 rounded-full border-4 border-white bg-slate-100 text-slate-500 shadow shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2">
+                                            {event.action.includes('Created') ? <User className="w-4 h-4" /> :
+                                             event.action.includes('Correction') ? <AlertCircle className="w-4 h-4 text-amber-500" /> :
+                                             event.action.includes('Resubmitted') ? <Clock className="w-4 h-4 text-blue-500" /> :
+                                             event.action.includes('Approved') ? <CheckCircle className="w-4 h-4 text-emerald-500" /> :
+                                             <FileText className="w-4 h-4" />}
                                         </div>
-                                        <div className="w-[calc(100%-3rem)] md:w-[calc(50%-2rem)] bg-slate-50 p-4 rounded-lg border border-slate-200 shadow-sm">
-                                            <div className="flex items-center justify-between space-x-2 mb-1">
-                                                <div className="font-bold text-slate-900 text-sm">{event.action}</div>
-                                                <time className="font-medium text-indigo-500 text-xs">
-                                                    {event.date ? format(new Date(event.date), 'dd MMM, HH:mm') : 'N/A'}
-                                                </time>
+                                        {/* Card */}
+                                        <div className="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] bg-slate-50 p-4 rounded border border-slate-200 shadow-sm">
+                                            <div className="flex items-center justify-between mb-1">
+                                                <h4 className="font-bold text-slate-800 text-sm">{event.action}</h4>
+                                                <time className="text-xs text-slate-400 font-medium">{format(new Date(event.date), 'dd MMM yyyy, hh:mm a')}</time>
                                             </div>
-                                            <div className="text-slate-500 text-xs mt-1">
-                                                By: <span className="font-medium text-slate-700">{event.performedBy?.name || 'System'}</span>
-                                            </div>
-                                            {event.remarks && (
-                                                <div className="text-slate-600 text-xs mt-2 italic border-l-2 border-slate-300 pl-2">
-                                                    "{event.remarks}"
-                                                </div>
-                                            )}
+                                            <p className="text-xs text-slate-600 font-medium">
+                                                By: {(() => {
+                                                    let name = event.performedBy?.name;
+                                                    let id = event.performedBy?.employeeId;
+                                                    
+                                                    // Handle backend stringification bugs gracefully
+                                                    if (typeof id === 'string' && id.includes('{ _id:')) {
+                                                        const nameMatch = id.match(/firstName:\s*'([^']+)'/);
+                                                        const idMatch = id.match(/employeeId:\s*'([^']+)'/);
+                                                        name = nameMatch ? nameMatch[1] : 'System';
+                                                        id = idMatch ? idMatch[1] : 'N/A';
+                                                    }
+                                                    
+                                                    return `${name || 'System'} (${id || 'N/A'})`;
+                                                })()}
+                                            </p>
+                                            {event.remarks && <p className="text-xs text-slate-500 mt-2 bg-white p-2 rounded border border-slate-100">{event.remarks}</p>}
                                         </div>
                                     </div>
-                                ))
-                            )}
-                        </div>
-                    </div>
-
-                    {/* Admin Verification Checklist */}
-                    <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
-                        <h3 className="font-semibold text-slate-800 flex items-center gap-2 mb-4 border-b pb-2">
-                            <CheckCircle className="w-4 h-4 text-slate-500" />
-                            Admin Verification Checklist
-                        </h3>
-                        <p className="text-xs text-slate-500 mb-4">Please verify all the following items before approving this customer.</p>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                            {Object.entries(checklist).map(([key, value]) => (
-                                <label key={key} className={`flex items-center p-3 rounded-lg border cursor-pointer transition-colors ${value ? 'bg-indigo-50/50 border-indigo-200' : 'bg-slate-50 border-slate-200 hover:bg-slate-100'}`}>
-                                    <input 
-                                        type="checkbox" 
-                                        checked={value} 
-                                        onChange={() => toggleChecklist(key)}
-                                        className="w-4 h-4 text-indigo-600 rounded border-slate-300 focus:ring-indigo-500" 
-                                    />
-                                    <span className={`ml-3 text-sm ${value ? 'text-indigo-900 font-medium' : 'text-slate-700'}`}>
-                                        {key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}
-                                    </span>
-                                </label>
-                            ))}
-                        </div>
-                    </div>
-
-                    {/* Remarks Textarea */}
-                    <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
-                        <h3 className="font-semibold text-slate-800 flex items-center gap-2 mb-4 border-b pb-2">
-                            <FileText className="w-4 h-4 text-slate-500" />
-                            Admin Remarks
-                        </h3>
-                        <textarea
-                            value={remarks}
-                            onChange={(e) => setRemarks(e.target.value)}
-                            placeholder="Enter remarks, rejection reason, or correction instructions..."
-                            className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none text-sm min-h-[100px] resize-y bg-slate-50"
-                        />
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="text-center py-6 text-slate-500 text-sm">No workflow history available.</div>
+                        )}
                     </div>
                 </div>
+
+                {/* Right Column: Verification & Actions */}
+                {!viewOnly && (
+                    <div className="flex flex-col gap-6">
+                        {/* Admin Verification Checklist */}
+                        <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+                            <h3 className="font-semibold text-slate-800 flex items-center gap-2 mb-4 border-b pb-2">
+                                <CheckCircle className="w-4 h-4 text-slate-500" />
+                                Admin Verification Checklist
+                            </h3>
+                            <p className="text-xs text-slate-500 mb-4">Please verify all the following items before approving this customer.</p>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                {Object.entries(checklist).map(([key, value]) => (
+                                    <label key={key} className={`flex items-center p-3 rounded-lg border cursor-pointer transition-colors ${value ? 'bg-indigo-50/50 border-indigo-200' : 'bg-slate-50 border-slate-200 hover:bg-slate-100'}`}>
+                                        <input 
+                                            type="checkbox" 
+                                            checked={value} 
+                                            onChange={() => toggleChecklist(key)}
+                                            className="w-4 h-4 text-indigo-600 rounded border-slate-300 focus:ring-indigo-500" 
+                                        />
+                                        <span className={`ml-3 text-sm ${value ? 'text-indigo-900 font-medium' : 'text-slate-700'}`}>
+                                            {key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}
+                                        </span>
+                                    </label>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Remarks Textarea */}
+                        <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+                            <h3 className="font-semibold text-slate-800 flex items-center gap-2 mb-4 border-b pb-2">
+                                <FileText className="w-4 h-4 text-slate-500" />
+                                Admin Remarks & Correction Selection
+                            </h3>
+                            
+                            <div className="mb-4">
+                                <label className="block text-sm font-medium text-slate-700 mb-2">Select Fields for Correction (Optional)</label>
+                                <div className="flex flex-wrap gap-2">
+                                    {correctionOptions.map(option => (
+                                        <button
+                                            key={option.id}
+                                            onClick={() => toggleCorrectionField(option.id)}
+                                            className={`px-3 py-1.5 text-xs font-medium rounded-full border transition-colors ${
+                                                selectedCorrectionFields.includes(option.id)
+                                                    ? 'bg-amber-100 border-amber-300 text-amber-800'
+                                                    : 'bg-white border-slate-300 text-slate-600 hover:bg-slate-50'
+                                            }`}
+                                        >
+                                            {option.label}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            <textarea
+                                value={remarks}
+                                onChange={(e) => setRemarks(e.target.value)}
+                                placeholder="Enter remarks, rejection reason, or correction instructions..."
+                                className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none text-sm min-h-[100px] resize-y bg-slate-50"
+                            />
+                        </div>
+                    </div>
+                )}
 
                 {/* Footer Actions */}
-                <div className="p-4 bg-white border-t border-slate-200 flex flex-wrap gap-3 sticky bottom-0 z-10 justify-end">
-                    <button
-                        onClick={() => onSendBack(remarks)}
-                        className="px-6 py-2.5 rounded-xl border border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100 font-medium text-sm transition-colors flex items-center gap-2"
-                    >
-                        <AlertCircle className="w-4 h-4" />
-                        Send Back
-                    </button>
-                    <button
-                        onClick={() => onReject(remarks)}
-                        className="px-6 py-2.5 rounded-xl border border-red-200 bg-red-50 text-red-700 hover:bg-red-100 font-medium text-sm transition-colors flex items-center gap-2"
-                    >
-                        <XCircle className="w-4 h-4" />
-                        Reject
-                    </button>
-                    <button
-                        onClick={() => onApprove(remarks)}
-                        disabled={!isChecklistComplete}
-                        className={`px-6 py-2.5 rounded-xl font-medium text-sm transition-all flex items-center gap-2 shadow-sm ${
-                            isChecklistComplete 
-                            ? 'bg-slate-900 text-white hover:bg-slate-800 shadow-slate-900/20' 
-                            : 'bg-slate-100 text-slate-400 cursor-not-allowed'
-                        }`}
-                    >
-                        <CheckCircle className="w-4 h-4" />
-                        Approve Customer
-                    </button>
-                </div>
+                {!viewOnly && (
+                    <div className="p-4 bg-white border-t border-slate-200 flex flex-wrap gap-3 sticky bottom-0 z-10 justify-end mt-auto">
+                        <button
+                            onClick={() => onSendBack(remarks, selectedCorrectionFields)}
+                            className="px-6 py-2.5 rounded-xl border border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100 font-medium text-sm transition-colors flex items-center gap-2"
+                        >
+                            <AlertCircle className="w-4 h-4" />
+                            Send Back
+                        </button>
+                        <button
+                            onClick={() => onReject(remarks)}
+                            className="px-6 py-2.5 rounded-xl border border-red-200 bg-red-50 text-red-700 hover:bg-red-100 font-medium text-sm transition-colors flex items-center gap-2"
+                        >
+                            <XCircle className="w-4 h-4" />
+                            Reject
+                        </button>
+                        <button
+                            onClick={() => onApprove(remarks)}
+                            disabled={!isChecklistComplete}
+                            className={`px-6 py-2.5 rounded-xl font-medium text-sm transition-all flex items-center gap-2 shadow-sm ${
+                                isChecklistComplete 
+                                ? 'bg-slate-900 text-white hover:bg-slate-800 shadow-slate-900/20' 
+                                : 'bg-slate-100 text-slate-400 cursor-not-allowed'
+                            }`}
+                        >
+                            <CheckCircle className="w-4 h-4" />
+                            Approve Customer
+                        </button>
+                    </div>
+                )}
             </div>
         </>
     );

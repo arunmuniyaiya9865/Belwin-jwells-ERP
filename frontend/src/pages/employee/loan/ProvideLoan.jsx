@@ -3,6 +3,18 @@ import { Save, RefreshCcw, XCircle, Search } from 'lucide-react';
 import toast, { Toaster } from 'react-hot-toast';
 import { getCustomerById } from '../../../services/customerService';
 import { createLoan, getProvideLoanDetails } from '../../../services/loanService';
+import { 
+  calculateNetWeight, 
+  calculateArticleValue, 
+  calculateTotalGoldWeight, 
+  calculateTotalGoldValue, 
+  calculateEligibleLoanAmount, 
+  calculateInterest, 
+  calculateLoanEndDate, 
+  calculateTotalDays, 
+  calculateRemainingDays, 
+  calculateSettlementAmount 
+} from '../../../utils/loanCalculations';
 
 const ProvideLoan = () => {
   const [activeTab, setActiveTab] = useState('Receipt');
@@ -82,46 +94,89 @@ const ProvideLoan = () => {
   const handleArticleChange = (index, field, value) => {
     const newArticles = [...articles];
     const article = { ...newArticles[index], [field]: value };
-
-    if (field === 'totWt' || field === 'stoneWt') {
-      const tot = parseFloat(article.totWt) || 0;
-      const stone = parseFloat(article.stoneWt) || 0;
-      if (tot > 0) {
-        article.nettWt = (tot - stone).toFixed(2);
-      }
-    }
-
-    const nett = parseFloat(article.nettWt) || 0;
-    const rate = parseFloat(article.gramRate) || 0;
-    if (nett > 0 && rate > 0) {
-      article.total = (nett * rate).toFixed(2);
-    } else {
-      article.total = '';
-    }
-
     newArticles[index] = article;
     setArticles(newArticles);
-
-    const sumTotal = newArticles.reduce((sum, art) => sum + (parseFloat(art.total) || 0), 0);
-    const sumWt = newArticles.reduce((sum, art) => sum + (parseFloat(art.totWt) || 0), 0);
-    
-    setFormData(prev => ({ ...prev, loanAmount: sumTotal > 0 ? sumTotal.toFixed(2) : '' }));
-    setTotalWt(sumWt > 0 ? sumWt.toFixed(2) : '');
   };
 
+  // --- AUTOMATIC CALCULATION ENGINE ---
   useEffect(() => {
-    if (formData.loanStartDate && formData.maturePeriod) {
-      const startDate = new Date(formData.loanStartDate);
-      if (!isNaN(startDate)) {
-        const endDate = new Date(startDate);
-        endDate.setMonth(endDate.getMonth() + parseInt(formData.maturePeriod));
-        setFormData(prev => ({
-          ...prev,
-          loanEndDate: endDate.toISOString().slice(0, 10)
-        }));
+    let newArticles = [...articles];
+    let articlesChanged = false;
+
+    // 1. Calculate Row-Level Article Values
+    newArticles = newArticles.map(art => {
+      const netWt = calculateNetWeight(art.totWt || 0, art.stoneWt || 0);
+      // Force netWt to never be negative and notify if stoneWt > totWt
+      if (parseFloat(art.stoneWt) > parseFloat(art.totWt)) {
+         // UI could notify here, but we enforce it
       }
+      
+      const rate = formData.gramRate ? parseFloat(formData.gramRate) : 0;
+      const totalVal = calculateArticleValue(netWt, rate);
+      
+      if (art.nettWt != netWt || art.total != totalVal || art.gramRate != rate) {
+         articlesChanged = true;
+         return { ...art, nettWt: netWt, total: totalVal, gramRate: rate };
+      }
+      return art;
+    });
+
+    if (articlesChanged) {
+       setArticles(newArticles);
     }
-  }, [formData.loanStartDate, formData.maturePeriod]);
+
+    // 2. Calculate Footer Totals
+    const currentTotalWt = calculateTotalGoldWeight(newArticles);
+    if (totalWt != currentTotalWt) setTotalWt(currentTotalWt);
+
+    const totalGoldValue = calculateTotalGoldValue(newArticles);
+    
+    // 3. Calculate Eligible Loan
+    // Assume 75% if not present in scheme. The user requested loan percentage from scheme settings, 
+    // but schema didn't have one explicitly. We use a default of 75 for now.
+    const eligibleAmount = calculateEligibleLoanAmount(totalGoldValue, 75); 
+
+    // Update form data with calculations
+    setFormData(prev => {
+       const loanStart = prev.loanStartDate || new Date().toISOString().slice(0,10);
+       const endDate = calculateLoanEndDate(loanStart, prev.maturePeriod);
+       const totDays = calculateTotalDays(loanStart, endDate);
+       const remDays = calculateRemainingDays(endDate);
+
+       // Interest
+       const interest = calculateInterest(prev.loanAmount, prev.interestRate);
+
+       // Settlement
+       const remainingLoan = parseFloat(prev.remainingLoanAmount) || parseFloat(prev.loanAmount) || 0;
+       const remainingInterest = parseFloat(prev.remainingInterestAmount) || interest || 0;
+       const penalty = parseFloat(prev.penaltyPercent) || 0;
+       const docCharge = parseFloat(prev.documentCharge) || 0;
+       
+       const settlement = calculateSettlementAmount(remainingLoan, remainingInterest, penalty, docCharge);
+
+       return {
+         ...prev,
+         eligibleLoanAmount: eligibleAmount,
+         loanEndDate: endDate,
+         totalNoOfDays: totDays,
+         remainingDays: remDays,
+         remainingInterestAmount: interest, // Base it on calculated interest
+         fullSettlementAmount: settlement
+       };
+    });
+  }, [
+     articles, 
+     formData.gramRate, 
+     formData.loanStartDate, 
+     formData.maturePeriod, 
+     formData.loanAmount, 
+     formData.interestRate,
+     formData.remainingLoanAmount,
+     formData.penaltyPercent,
+     formData.documentCharge
+  ]);
+
+  // Date calculations now handled in central engine above
 
   const handleSearchCustomer = async () => {
     if (!searchCustomerId) {
@@ -142,6 +197,11 @@ const ProvideLoan = () => {
       const isApproved = customer.approvalStatus === 'Approved' || customer.status === 'Approved';
       if (!isApproved) {
         toast.error(`Customer is not approved. Current status: ${customer.approvalStatus || customer.status}`);
+        return;
+      }
+
+      if (!scheme) {
+        toast.error("No active Gold Scheme found for this customer.");
         return;
       }
 
@@ -235,7 +295,7 @@ const ProvideLoan = () => {
       const result = await createLoan(payload);
       toast.success(`Loan Created Successfully! ID: ${result._id}`);
       
-      // Optionally reset form here
+      handleClear();
     } catch (error) {
       toast.error(error.response?.data?.message || 'Error saving loan');
     }
@@ -250,13 +310,24 @@ const ProvideLoan = () => {
       loanAmount: '', remainingLoanAmount: '', status: 'Pending', totalNoOfDays: '', interestRate: '',
       additionalInterestRate: '', totalPaidInterestAmount: '', totalInterestPaidDays: '', remainingDays: '',
       remainingInterestAmount: '', documentCharge: '', fullSettlementAmount: '', enterDays: '',
-      receiptDate: new Date().toISOString().slice(0, 10), receiptAmount: '', penalty: false
+      receiptDate: new Date().toISOString().slice(0, 10), receiptAmount: '', penalty: false,
+      eligibleLoanAmount: ''
     });
     setArticles([
       { category: '', details: '', qty: '', totWt: '', stoneWt: '', nettWt: '', purity: '', gramRate: '', total: '' },
       { category: '', details: '', qty: '', totWt: '', stoneWt: '', nettWt: '', purity: '', gramRate: '', total: '' }
     ]);
     setTotalWt('');
+  };
+
+  const handleLoanAmountChange = (e) => {
+    let val = parseFloat(e.target.value) || 0;
+    const max = parseFloat(formData.eligibleLoanAmount) || 0;
+    if (val > max) {
+      toast.error('Loan Amount cannot exceed Eligible Loan Amount!');
+      val = max;
+    }
+    setFormData(prev => ({ ...prev, loanAmount: val > 0 ? val : '' }));
   };
 
 
@@ -336,8 +407,9 @@ const ProvideLoan = () => {
               <div>
                 <div className={row}><span className={lbl}>Loan Start Date :</span><input type="date" name="loanStartDate" className={inp} value={formData.loanStartDate} onChange={handleChange} required /></div>
                 <div className={row}><span className={lbl}>Loan End Date :</span><input type="date" name="loanEndDate" className={`${inp} bg-gray-100 cursor-not-allowed`} value={formData.loanEndDate} readOnly /></div>
-                <div className={row}><span className={lbl}>Loan Amount :</span><input type="text" name="loanAmount" className={inp} value={formData.loanAmount} onChange={handleChange} /></div>
-                <div className={row}><span className={lbl}>Remaining Loan Amount :</span><input type="text" name="remainingLoanAmount" className={inp} value={formData.remainingLoanAmount} onChange={handleChange} /></div>
+                <div className={row}><span className={lbl}>Eligible Loan Amount :</span><input type="text" name="eligibleLoanAmount" className={`${inp} bg-gray-100 font-bold`} value={formData.eligibleLoanAmount} readOnly /></div>
+                <div className={row}><span className={lbl}>Loan Amount :</span><input type="text" name="loanAmount" className={inp} value={formData.loanAmount} onChange={handleLoanAmountChange} /></div>
+                <div className={row}><span className={lbl}>Remaining Loan Amount :</span><input type="text" name="remainingLoanAmount" className={`${inp} bg-gray-100 cursor-not-allowed`} value={formData.remainingLoanAmount} readOnly /></div>
                 <div className={row}><span className={lbl}>Status :</span>
                   <select name="status" className={inp} value={formData.status} onChange={handleChange}>
                     <option value="Approved">Approved</option>
@@ -351,21 +423,21 @@ const ProvideLoan = () => {
             {/* Calculations & Inputs */}
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-x-12 gap-y-6 mb-6">
               <div>
-                <div className={row}><span className={lbl}>Total No.of Days :</span><input type="text" name="totalNoOfDays" className={inp} value={formData.totalNoOfDays} onChange={handleChange} /></div>
+                <div className={row}><span className={lbl}>Total No.of Days :</span><input type="text" name="totalNoOfDays" className={`${inp} bg-gray-100 cursor-not-allowed`} value={formData.totalNoOfDays} readOnly /></div>
                 <div className="flex items-center gap-4 mb-3">
                   <span className={lbl}>Interest Rate % :</span>
-                  <input type="text" name="interestRate" className={inp} value={formData.interestRate} onChange={handleChange} />
+                  <input type="text" name="interestRate" className={`${inp} bg-gray-100 cursor-not-allowed`} value={formData.interestRate} readOnly />
                   <div className="ml-2 flex items-center gap-2 shrink-0">
                     <span className="text-base font-bold text-black">Add. % :</span>
                     <input type="text" name="additionalInterestRate" className="w-16 px-2 py-1 bg-white border border-gray-400 rounded-md text-lg font-bold text-black focus:outline-none focus:border-black" value={formData.additionalInterestRate} onChange={handleChange} />
                   </div>
                 </div>
-                <div className={row}><span className={lbl}>Total Paid Interest Amount :</span><input type="text" name="totalPaidInterestAmount" className={inp} value={formData.totalPaidInterestAmount} onChange={handleChange} /></div>
-                <div className={row}><span className={lbl}>Total Interest Paid Days :</span><input type="text" name="totalInterestPaidDays" className={inp} value={formData.totalInterestPaidDays} onChange={handleChange} /></div>
-                <div className={row}><span className={lbl}>Remaining Days :</span><input type="text" name="remainingDays" className={inp} value={formData.remainingDays} onChange={handleChange} /></div>
-                <div className={`${row} mt-6`}><span className={lbl}>Remaining Interest Amount :</span><input type="text" name="remainingInterestAmount" className={inp} value={formData.remainingInterestAmount} onChange={handleChange} /></div>
+                <div className={row}><span className={lbl}>Total Paid Interest Amount :</span><input type="text" name="totalPaidInterestAmount" className={`${inp} bg-gray-100 cursor-not-allowed`} value={formData.totalPaidInterestAmount} readOnly /></div>
+                <div className={row}><span className={lbl}>Total Interest Paid Days :</span><input type="text" name="totalInterestPaidDays" className={`${inp} bg-gray-100 cursor-not-allowed`} value={formData.totalInterestPaidDays} readOnly /></div>
+                <div className={row}><span className={lbl}>Remaining Days :</span><input type="text" name="remainingDays" className={`${inp} bg-gray-100 cursor-not-allowed`} value={formData.remainingDays} readOnly /></div>
+                <div className={`${row} mt-6`}><span className={lbl}>Remaining Interest Amount :</span><input type="text" name="remainingInterestAmount" className={`${inp} bg-gray-100 cursor-not-allowed font-bold`} value={formData.remainingInterestAmount} readOnly /></div>
                 <div className={`${row} mt-6`}><span className={lbl}>Document Charge :</span><input type="text" name="documentCharge" className={inp} value={formData.documentCharge} onChange={handleChange} /></div>
-                <div className={row}><span className={lbl}>Full Settlement Amount Rs :</span><input type="text" name="fullSettlementAmount" className={inp} value={formData.fullSettlementAmount} onChange={handleChange} /></div>
+                <div className={row}><span className={lbl}>Full Settlement Amount Rs :</span><input type="text" name="fullSettlementAmount" className={`${inp} bg-gray-100 cursor-not-allowed font-bold`} value={formData.fullSettlementAmount} readOnly /></div>
               </div>
               
               <div className="bg-white/50 p-6 border border-erp-green-dark rounded-xl max-w-sm self-start">
@@ -432,10 +504,10 @@ const ProvideLoan = () => {
                         <td className={tdStyle}><input type="text" className={tableInp} value={article.qty} onChange={(e) => handleArticleChange(i, 'qty', e.target.value)} /></td>
                         <td className={tdStyle}><input type="text" className={tableInp} value={article.totWt} onChange={(e) => handleArticleChange(i, 'totWt', e.target.value)} /></td>
                         <td className={tdStyle}><input type="text" className={tableInp} value={article.stoneWt} onChange={(e) => handleArticleChange(i, 'stoneWt', e.target.value)} /></td>
-                        <td className={tdStyle}><input type="text" className={tableInp} value={article.nettWt} onChange={(e) => handleArticleChange(i, 'nettWt', e.target.value)} /></td>
+                        <td className={tdStyle}><input type="text" className={`${tableInp} bg-gray-50 cursor-not-allowed font-bold`} value={article.nettWt} readOnly /></td>
                         <td className={tdStyle}><input type="text" className={tableInp} value={article.purity} onChange={(e) => handleArticleChange(i, 'purity', e.target.value)} /></td>
-                        <td className={tdStyle}><input type="text" className={tableInp} value={article.gramRate} onChange={(e) => handleArticleChange(i, 'gramRate', e.target.value)} /></td>
-                        <td className={tdStyle}><input type="text" className={tableInp} value={article.total} readOnly placeholder="Auto" /></td>
+                        <td className={tdStyle}><input type="text" className={`${tableInp} bg-gray-50 cursor-not-allowed`} value={article.gramRate} readOnly /></td>
+                        <td className={tdStyle}><input type="text" className={`${tableInp} bg-gray-50 cursor-not-allowed font-bold text-red-700`} value={article.total} readOnly /></td>
                       </tr>
                     ))}
                   </tbody>

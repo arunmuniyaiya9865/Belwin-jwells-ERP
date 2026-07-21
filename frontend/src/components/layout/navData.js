@@ -119,6 +119,7 @@ export const EMPLOYEE_NAV = [
       { label: 'New Customer', icon: UserPlus, path: '/new-customer' },
       { label: 'Edit/Delete Customer', icon: FileEdit, path: '/edit-delete-customer' },
       { label: 'Customer Approval Pending', icon: ClipboardList, path: '/customer-approval-pending' },
+      { label: 'Correction Requests', icon: ClipboardList, path: '/correction-requests' },
       { label: 'Aadhar Verification', icon: ShieldCheck, path: '/aadhar-verification' },
       { label: 'Customer Ledger', icon: BookOpen, path: '/customer-ledger' }
     ]

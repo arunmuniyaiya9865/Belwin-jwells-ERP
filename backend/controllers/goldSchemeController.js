@@ -63,7 +63,8 @@ exports.createGoldScheme = async (req, res, next) => {
         await newScheme.save();
         res.status(201).json({ message: "Gold Scheme created successfully", scheme: newScheme });
     } catch (error) {
-        next(new ApiError(500, "Error creating Gold Scheme"));
+        console.error("Error creating Gold Scheme:", error);
+        next(new ApiError(500, error.message || "Error creating Gold Scheme"));
     }
 };
 

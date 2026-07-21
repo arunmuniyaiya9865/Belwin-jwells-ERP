@@ -76,6 +76,19 @@ const customerSchema = new mongoose.Schema({
     },
     rejectionReason: { type: String, default: '' },
 
+    // Correction Workflow
+    correctionStatus: { type: Boolean, default: false },
+    correctionRequestedAt: { type: Date },
+    correctionRequestedBy: {
+        id: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+        employeeId: { type: String },
+        name: { type: String },
+        role: { type: String }
+    },
+    correctionFields: { type: [String], default: [] },
+    resubmittedAt: { type: Date },
+    resubmissionCount: { type: Number, default: 0 },
+
     // New Approval Workflow (Requirement 3)
     approvalStatus: {
         type: String,
@@ -97,6 +110,11 @@ const customerSchema = new mongoose.Schema({
     approvedDate: { type: Date, default: null },
     rejectedDate: { type: Date, default: null },
     adminRemarks: { type: String, trim: true, default: '' },
+    approvedByEmployee: {
+        employeeId: { type: String },
+        name: { type: String },
+        role: { type: String }
+    },
     approvalIpAddress: { type: String, default: '' },
     approvalUserAgent: { type: String, default: '' },
     workflowHistory: [
@@ -125,6 +143,14 @@ const customerSchema = new mongoose.Schema({
     // Relations
     employeeId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
     createdBy:  { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    createdByEmployee: {
+        id: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+        employeeId: { type: String },
+        employeeName: { type: String },
+        role: { type: String },
+        branchId: { type: mongoose.Schema.Types.ObjectId, ref: 'Branch' },
+        branchName: { type: String }
+    },
     updatedBy:  { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
 
     // Soft delete

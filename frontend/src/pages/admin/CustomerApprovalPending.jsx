@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { getAdminPendingApprovals, processAdminApprovalAction } from '../../services/customerService';
+import { getAdminPendingApprovals, processAdminApprovalAction, processAdminCorrectionRequest } from '../../services/customerService';
 import { Search, Filter, Eye, AlertTriangle } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { format } from 'date-fns';
@@ -70,6 +70,19 @@ const CustomerApprovalPending = () => {
             } else {
                 toast.error(error.response?.data?.message || `Failed to ${action.toLowerCase()} customer`);
             }
+        }
+    };
+
+    const handleCorrectionAction = async (remarks, correctionFields) => {
+        try {
+            const res = await processAdminCorrectionRequest(selectedCustomer._id, remarks, correctionFields);
+            if (res.success) {
+                toast.success(res.message);
+                setIsDrawerOpen(false);
+                fetchPendingApprovals();
+            }
+        } catch (error) {
+            toast.error(error.response?.data?.message || 'Failed to send back customer');
         }
     };
 
@@ -190,7 +203,7 @@ const CustomerApprovalPending = () => {
                 customer={selectedCustomer}
                 onApprove={(remarks) => handleAction('Approve', remarks)}
                 onReject={(remarks) => handleAction('Reject', remarks)}
-                onSendBack={(remarks) => handleAction('Send Back', remarks)}
+                onSendBack={handleCorrectionAction}
             />
 
             {/* Duplicate Warning Modal */}

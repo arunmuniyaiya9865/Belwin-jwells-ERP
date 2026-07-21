@@ -23,6 +23,6 @@ export const updateLoan = async (loanId, loanData) => {
 };
 
 export const getProvideLoanDetails = async (customerId) => {
-  const response = await api.get('/provide-loan/customer/${customerId}');
+  const response = await api.get(`/provide-loan/customer/${customerId}`);
   return response.data;
 };

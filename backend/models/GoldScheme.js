@@ -1,5 +1,5 @@
 const mongoose = require('mongoose');
-const { Counter } = require('./Customer');
+const Counter = require('./Counter');
 
 const goldSchemeSchema = new mongoose.Schema({
   schemeId: { type: String, unique: true, index: true },
@@ -28,8 +28,14 @@ const goldSchemeSchema = new mongoose.Schema({
 
   status: {
     type: String,
-    default: "Active"
-  }
+    default: "Active", // Can be "Active" or "Utilized"
+    enum: ["Active", "Utilized", "Closed", "Inactive"]
+  },
+
+  // Link to Loan
+  linkedLoanId: { type: String },
+  linkedLoanObjectId: { type: mongoose.Schema.Types.ObjectId, ref: 'Loan' },
+  utilizedAt: { type: Date }
 }, { timestamps: true });
 
 goldSchemeSchema.statics.getNextId = async function () {

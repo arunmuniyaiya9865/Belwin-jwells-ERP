@@ -124,10 +124,101 @@ const handleApprovalAction = async (req, res, next) => {
     }
 };
 
+const requestCorrection = async (req, res, next) => {
+    try {
+        console.log("=== requestCorrection TRIGGERED ===");
+        console.log("req.params:", req.params);
+        console.log("req.body:", req.body);
+        console.log("req.user (partial):", { _id: req.user?._id, role: req.user?.role, employeeId: req.user?.employeeId, username: req.user?.username });
+
+        const { customerId } = req.params;
+        const { remarks, correctionFields } = req.body;
+        const adminUser = req.user;
+
+        if (adminUser.role !== 'admin' && adminUser.role !== 'superAdmin') {
+            return next(new ApiError(403, 'Only admins can request corrections'));
+        }
+
+        if (!remarks || !remarks.trim()) {
+            return next(new ApiError(400, 'Remarks are required to request correction'));
+        }
+
+        const customer = await require('../models/Customer').Customer.findById(customerId).lean();
+        if (!customer) {
+            return next(new ApiError(404, 'Customer not found'));
+        }
+
+        if (customer.status !== 'Customer Approval Pending') {
+            return next(new ApiError(400, 'Customer is not in a pending state'));
+        }
+
+        const empIdStr = adminUser.employeeId?.employeeId || adminUser.employeeId || '';
+
+        const historyEntry = {
+            action: 'Correction Requested',
+            performedBy: {
+                id: adminUser._id,
+                employeeId: empIdStr,
+                name: adminUser.name || adminUser.username,
+                role: adminUser.role
+            },
+            date: new Date(),
+            remarks: remarks
+        };
+
+        const updatePayload = {
+            $set: {
+                status: 'Correction Required',
+                correctionStatus: true,
+                adminRemarks: remarks,
+                correctionRequestedAt: new Date(),
+                correctionRequestedBy: {
+                    id: adminUser._id,
+                    employeeId: empIdStr,
+                    name: adminUser.name || adminUser.username,
+                    role: adminUser.role
+                },
+                correctionFields: Array.isArray(correctionFields) ? correctionFields : []
+            },
+            $push: {
+                workflowHistory: historyEntry
+            }
+        };
+
+        // If the corrupted approvedBy field exists, unset it
+        if (customer.approvedBy === "" || typeof customer.approvedBy === 'string') {
+            updatePayload.$unset = { approvedBy: 1 };
+        }
+
+        await require('../models/Customer').Customer.updateOne({ _id: customerId }, updatePayload);
+        
+        // Fetch fresh copy to return
+        let updatedCustomer = null;
+        try {
+            updatedCustomer = await require('../models/Customer').Customer.findById(customerId);
+        } catch (e) {
+            // Fallback if there are other corrupted fields
+            updatedCustomer = { ...customer, ...updatePayload.$set };
+        }
+        
+        res.json({ success: true, message: 'Customer returned for correction successfully', data: updatedCustomer });
+    } catch (error) {
+        console.error('=== ERROR in requestCorrection ===');
+        console.error('Message:', error.message);
+        console.error('Name:', error.name);
+        console.error('Stack:', error.stack);
+        if (error.errors) {
+            console.error('Validation Errors:', JSON.stringify(error.errors, null, 2));
+        }
+        next(new ApiError(error.status || 500, error.message || 'Server error'));
+    }
+};
+
 module.exports = {
     searchCustomer,
     getStatus,
     getDebugInfo,
     getPendingCustomers,
-    handleApprovalAction
+    handleApprovalAction,
+    requestCorrection
 };

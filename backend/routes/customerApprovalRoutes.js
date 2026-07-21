@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { protect } = require('../middleware/authMiddleware');
-const { searchCustomer, getStatus, getDebugInfo, getPendingCustomers, handleApprovalAction } = require('../controllers/customerApprovalController');
+const { searchCustomer, getStatus, getDebugInfo, getPendingCustomers, handleApprovalAction, requestCorrection } = require('../controllers/customerApprovalController');
 
 // Guest user middleware (consistent with existing customer routes)
 
@@ -15,6 +15,9 @@ router.get('/pending', protect, getPendingCustomers);
 // POST /api/customer-approval/action/:customerId
 router.post('/action/:customerId', protect, handleApprovalAction);
 
+// PUT /api/customer-approval/request-correction/:customerId
+router.put('/request-correction/:customerId', protect, requestCorrection);
+
 // GET /api/customer-approval/search?customerId=...&branchId=...
 router.get('/search', protect, searchCustomer);
 
@@ -23,5 +26,6 @@ router.get('/status/:customerId', protect, getStatus);
 
 // GET /api/customer-approval/debug/:customerId
 router.get('/debug/:customerId', protect, getDebugInfo);
+
 
 module.exports = router;

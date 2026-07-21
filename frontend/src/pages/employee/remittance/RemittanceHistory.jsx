@@ -69,11 +69,11 @@ const RemittanceHistory = () => {
       <div className="flex justify-between items-center mb-6 shrink-0">
         <h2 className="text-2xl font-bold text-black">Remittance History</h2>
         <div className="flex gap-3">
-          <button onClick={handleExportPDF} className="flex items-center gap-2 px-4 py-2 bg-red-500 text-white font-semibold rounded-lg hover:bg-red-600 transition-colors text-sm">
-            <FileText size={16} /> PDF
+          <button onClick={handleExportExcel} className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 text-slate-700 font-semibold rounded-lg hover:bg-gray-50 transition-colors text-sm">
+            <FileDown size={16} /> Export Excel
           </button>
-          <button onClick={handleExportExcel} className="flex items-center gap-2 px-4 py-2 bg-erp-green text-white font-semibold rounded-lg hover:bg-green-700 transition-colors text-sm">
-            <FileDown size={16} /> Excel
+          <button onClick={handleExportPDF} className="flex items-center gap-2 px-4 py-2 bg-red-50 border border-red-200 text-red-600 font-semibold rounded-lg hover:bg-red-100 transition-colors text-sm">
+            <FileDown size={16} /> Export PDF
           </button>
         </div>
       </div>

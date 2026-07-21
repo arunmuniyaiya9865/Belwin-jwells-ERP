@@ -1,5 +1,5 @@
 const mongoose = require('mongoose');
-const { Counter } = require('./Customer'); // Import Counter for ID generation
+const Counter = require('./Counter'); // Import Counter for ID generation
 
 const loanSchema = new mongoose.Schema({
   loanId: { type: String, unique: true, index: true },
@@ -8,9 +8,12 @@ const loanSchema = new mongoose.Schema({
   
   // Gold Scheme Integration Fields
   schemeId: { type: String },
+  goldSchemeObjectId: { type: mongoose.Schema.Types.ObjectId, ref: 'GoldScheme' },
   schemeName: { type: String },
   employeeId: { type: String },
   employeeName: { type: String },
+  createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  branch: { type: String },
   interestPercent: { type: Number },
   gramRate: { type: Number },
   minimumGram: { type: Number },
@@ -40,6 +43,11 @@ const loanSchema = new mongoose.Schema({
   remainingInterestAmount: { type: Number },
   documentCharge: { type: Number },
   fullSettlementAmount: { type: Number },
+
+  // Audit Fields
+  calculationVersion: { type: String },
+  calculatedAt: { type: Date },
+  calculatedBy: { type: String },
 
   // Receipt Entry State
   receiptEntry: {

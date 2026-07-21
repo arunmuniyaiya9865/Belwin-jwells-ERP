@@ -154,15 +154,24 @@ const createCustomer = async (req, res, next) => {
             createdBy: req.user._id,
             branchId: req.user.branch || req.user.branchId || null,
             branchName: req.user.branchName || '',
+            // Snapshot creator employee
+            createdByEmployee: {
+                id: req.user._id,
+                employeeId: req.user.employeeId?.employeeId || req.user.employeeId || '',
+                employeeName: req.user.name || req.user.username || '',
+                role: req.user.role || '',
+                branchId: req.user.branch || req.user.branchId || null,
+                branchName: req.user.branchName || ''
+            },
             // Initialize workflow tracking
             approvalStatus: 'Pending',
             workflowHistory: [{
                 action: 'Customer Created',
                 performedBy: {
                     id: req.user._id,
-                    employeeId: req.user.employeeId,
-                    name: req.user.name,
-                    role: req.user.role
+                    employeeId: req.user.employeeId?.employeeId || req.user.employeeId || '',
+                    name: req.user.name || req.user.username || '',
+                    role: req.user.role || ''
                 },
                 date: new Date(),
                 remarks: 'Initial customer creation'
@@ -206,6 +215,7 @@ const getCustomers = async (req, res, next) => {
             status,
             gender,
             city,
+            branchId,
             startDate,
             endDate,
             sortBy = 'createdAt',
@@ -229,6 +239,7 @@ const getCustomers = async (req, res, next) => {
 
         if (status)           query.status = status;
         if (gender)           query.gender = gender;
+        if (branchId)         query.branchId = branchId;
         if (city)             query.city   = { $regex: city, $options: 'i' };
         if (startDate || endDate) {
             query.createdAt = {};
@@ -307,7 +318,7 @@ const getCustomerById = async (req, res, next) => {
 // ─────────────────────────────────────────────────────────────────────────────
 const updateCustomer = async (req, res, next) => {
     try {
-        const customer = await Customer.findOne({ _id: req.params.id, isDeleted: { $ne: true } });
+        const customer = await Customer.findOne({ _id: req.params.id, isDeleted: { $ne: true } }).lean();
         if (!customer) return next(new ApiError(404, 'Customer not found' ));
 
         if (customer.status === 'Approved' || customer.status === 'Rejected') {
@@ -332,34 +343,54 @@ const updateCustomer = async (req, res, next) => {
             'permanentAddress','temporaryAddress','voterId','occupation',
             'remarks','proof2Name','proof2Number'
         ];
+        
+        const updatePayload = { $set: {} };
         allowed.forEach(field => {
-            if (req.body[field] !== undefined) customer[field] = req.body[field];
+            if (req.body[field] !== undefined) updatePayload.$set[field] = req.body[field];
         });
 
-        if (!isGuest) customer.updatedBy = req.user._id;
+        if (!isGuest) updatePayload.$set.updatedBy = req.user._id;
         
         // Handle Correction Required resubmission
         if (customer.status === 'Correction Required') {
-            customer.status = 'Customer Approval Pending';
-            customer.approvalStatus = 'Pending';
-            customer.adminRemarks = '';
-            customer.workflowHistory.push({
-                action: 'Customer Updated and Resubmitted',
-                performedBy: {
-                    id: req.user._id,
-                    employeeId: req.user.employeeId,
-                    name: req.user.name,
-                    role: req.user.role
-                },
-                date: new Date(),
-                remarks: 'Customer resubmitted after correction.'
-            });
+            updatePayload.$set.status = 'Customer Approval Pending';
+            updatePayload.$set.approvalStatus = 'Pending';
+            updatePayload.$set.correctionFields = [];
+            updatePayload.$set.correctionStatus = false;
+            updatePayload.$set.resubmittedAt = new Date();
+            updatePayload.$set.resubmissionCount = (customer.resubmissionCount || 0) + 1;
+            
+            updatePayload.$push = {
+                workflowHistory: {
+                    action: 'Customer Updated and Resubmitted',
+                    performedBy: {
+                        id: req.user._id,
+                        employeeId: req.user.employeeId?.employeeId || req.user.employeeId || '',
+                        name: req.user.name || req.user.username || '',
+                        role: req.user.role || ''
+                    },
+                    date: new Date(),
+                    remarks: 'Customer resubmitted after correction.'
+                }
+            };
         }
 
-        addAudit(customer, 'UPDATED', req.user);
-        await customer.save();
+        // Fix corrupted approvedBy field if present
+        if (customer.approvedBy === "" || typeof customer.approvedBy === 'string') {
+            updatePayload.$unset = { approvedBy: 1 };
+        }
 
-        res.json({ success: true, message: 'Customer updated', data: customer });
+        await Customer.updateOne({ _id: customer._id }, updatePayload);
+
+        // Fetch fresh copy to return
+        let updatedCustomer = null;
+        try {
+            updatedCustomer = await Customer.findById(customer._id);
+        } catch (e) {
+            updatedCustomer = { ...customer, ...updatePayload.$set };
+        }
+
+        res.json({ success: true, message: 'Customer updated', data: updatedCustomer });
     } catch (error) { next(error); }
 };
 
@@ -370,37 +401,79 @@ const updateCustomer = async (req, res, next) => {
 // ─────────────────────────────────────────────────────────────────────────────
 const uploadDocuments = async (req, res, next) => {
     try {
-        const customer = await Customer.findOne({ _id: req.params.id, isDeleted: { $ne: true } });
+        const customer = await Customer.findOne({ _id: req.params.id, isDeleted: { $ne: true } }).lean();
         if (!customer) return next(new ApiError(404, 'Customer not found' ));
 
         const folder = `belwin-jewels/customers/${customer.customerId}`;
         const files = req.files || {};
+        const updatePayload = { $set: {} };
+
+        console.log('\n=============================================');
+        console.log('[DEBUG] UPLOAD DOCUMENTS ENDPOINT HIT!');
+        console.log('[DEBUG] req.params.id:', req.params.id);
+        console.log('[DEBUG] req.headers["content-type"]:', req.headers['content-type']);
+        console.log('[DEBUG] Object.keys(req.files || {}):', Object.keys(req.files || {}));
+        console.log('[DEBUG] req.body keys:', Object.keys(req.body || {}));
+        console.log('=============================================\n');
 
         if (req.files) {
-            const photo = req.files.photo?.[0];
-            const aadhaar = req.files.aadhaarDoc?.[0];
-            const proof2 = req.files.proof2Doc?.[0];
+            const documentFields = [
+                { fileKey: 'photo',      urlKey: 'customerPhotoUrl',   idKey: 'customerPhotoPublicId',   suffix: 'photo' },
+                { fileKey: 'aadhaarDoc', urlKey: 'aadhaarDocumentUrl', idKey: 'aadhaarDocumentPublicId', suffix: 'aadhaar' },
+                { fileKey: 'proof2Doc',  urlKey: 'proof2DocumentUrl',  idKey: 'proof2DocumentPublicId',  suffix: 'proof2' }
+            ];
 
-            if (photo) {
-                const upload = await uploadFromBuffer(photo.buffer, folder, 'photo');
-                customer.customerPhotoUrl = upload.secure_url;
-                customer.customerPhotoPublicId = upload.public_id;
-            }
-            if (aadhaar) {
-                const upload = await uploadFromBuffer(aadhaar.buffer, folder, 'aadhaar');
-                customer.aadhaarDocumentUrl = upload.secure_url;
-                customer.aadhaarDocumentPublicId = upload.public_id;
-            }
-            if (proof2) {
-                const upload = await uploadFromBuffer(proof2.buffer, folder, 'proof2');
-                customer.proof2DocumentUrl = upload.secure_url;
-                customer.proof2DocumentPublicId = upload.public_id;
+            for (const field of documentFields) {
+                const file = req.files[field.fileKey]?.[0];
+                if (file) {
+                    console.log(`\n=== REPLACING ${field.suffix.toUpperCase()} ===`);
+                    // Delete old image from Cloudinary if it exists
+                    if (customer[field.idKey]) {
+                        console.log(`[Cloudinary Audit] Found old public_id: ${customer[field.idKey]}`);
+                        try {
+                            const destroyResult = await require('../config/cloudinary').cloudinary.uploader.destroy(customer[field.idKey]);
+                            console.log(`[Cloudinary Audit] Destroy result:`, destroyResult);
+                        } catch (err) {
+                            console.error(`[Cloudinary Audit] Destroy failed:`, err.message);
+                        }
+                    } else {
+                        console.log(`[Cloudinary Audit] No old public_id found.`);
+                    }
+                    
+                    // Upload new image with unique timestamp to guarantee cache-busting
+                    const uniqueSuffix = `${field.suffix}_${Date.now()}`;
+                    const upload = await uploadFromBuffer(file.buffer, folder, uniqueSuffix);
+                    console.log(`[Cloudinary Audit] New upload public_id: ${upload.public_id}`);
+                    console.log(`[Cloudinary Audit] New secure_url: ${upload.secure_url}`);
+                    
+                    updatePayload.$set[field.urlKey] = upload.secure_url;
+                    updatePayload.$set[field.idKey] = upload.public_id;
+                }
             }
         }
 
-        addAudit(customer, 'DOCUMENTS_UPDATED', req.user);
-        await customer.save();
-        res.json({ success: true, message: 'Documents updated', data: customer });
+        // Fix corrupted approvedBy field if present
+        if (customer.approvedBy === "" || typeof customer.approvedBy === 'string') {
+            updatePayload.$unset = { approvedBy: 1 };
+        }
+
+        if (Object.keys(updatePayload.$set).length > 0 || updatePayload.$unset) {
+            await Customer.updateOne({ _id: customer._id }, updatePayload);
+        }
+
+        // Fetch fresh copy to return
+        let updatedCustomer = null;
+        try {
+            updatedCustomer = await Customer.findById(customer._id);
+            console.log(`\n=== FINAL MONGODB STATE AFTER SAVE ===`);
+            console.log(`customerPhotoPublicId: ${updatedCustomer.customerPhotoPublicId}`);
+            console.log(`aadhaarDocumentPublicId: ${updatedCustomer.aadhaarDocumentPublicId}`);
+            console.log(`proof2DocumentPublicId: ${updatedCustomer.proof2DocumentPublicId}`);
+        } catch (e) {
+            updatedCustomer = { ...customer, ...updatePayload.$set };
+        }
+
+        res.json({ success: true, message: 'Documents updated', data: updatedCustomer });
     } catch (error) { next(error); }
 };
 
@@ -568,7 +641,7 @@ const approveCustomerByApprovalId = async (req, res, next) => {
 
         // Update fields
         customer.approvalStatus = 'Approved';
-        customer.approvedBy = req.user.username || 'admin';
+        customer.approvedBy = req.user._id;
         customer.approvedDate = new Date();
 
         // Sync legacy status field if appropriate
@@ -623,6 +696,30 @@ const rejectCustomerByApprovalId = async (req, res, next) => {
     } catch (error) { next(error); }
 };
 
+const getCorrections = async (req, res, next) => {
+    try {
+        const query = { status: 'Correction Required', isDeleted: { $ne: true } };
+        const isGuest = req.user._id === '000000000000000000000000';
+        
+        // Employees only see their own branch's / their own correction requests
+        if (req.user.role !== 'admin' && req.user.role !== 'superAdmin' && !isGuest) {
+            const userBranch = req.user.branch || req.user.branchId;
+            if (userBranch) {
+                query.branchId = userBranch;
+            } else {
+                query.createdBy = req.user._id;
+            }
+        }
+
+        const customers = await Customer
+            .find(query)
+            .populate('createdBy', 'username role')
+            .lean();
+
+        res.json({ success: true, data: customers });
+    } catch (error) { next(error); }
+};
+
 module.exports = {
     createCustomer,
     uploadCustomerDocument,
@@ -639,4 +736,5 @@ module.exports = {
     getPendingCustomers,
     approveCustomerByApprovalId,
     rejectCustomerByApprovalId,
+    getCorrections,
 };

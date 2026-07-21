@@ -16,7 +16,7 @@ const getPendingApprovals = async () => {
 };
 
 const processApprovalAction = async (customerId, action, remarks, adminUser, overrideDuplicate, ipAddress, userAgent) => {
-    const customer = await Customer.findById(customerId);
+    const customer = await Customer.findById(customerId).lean();
     if (!customer) {
         throw { status: 404, message: 'Customer not found' };
     }
@@ -35,7 +35,7 @@ const processApprovalAction = async (customerId, action, remarks, adminUser, ove
                 { panNumber: customer.panNumber, panNumber: { $ne: '' } },
                 { mobileNumber: customer.mobileNumber }
             ]
-        });
+        }).lean();
 
         if (duplicates.length > 0 && !overrideDuplicate) {
             const hardDuplicates = duplicates.filter(d => 
@@ -67,40 +67,84 @@ const processApprovalAction = async (customerId, action, remarks, adminUser, ove
         action === 'Reject' ? 'Rejected' :
         'Sent Back For Correction';
 
-    customer.workflowHistory.push({
+    const empIdStr = adminUser.employeeId?.employeeId || adminUser.employeeId || '';
+
+    const historyEntry = {
         action: workflowAction,
         performedBy: {
             id: adminUser._id,
-            employeeId: adminUser.employeeId,
+            employeeId: empIdStr,
             name: adminUser.name || adminUser.username,
             role: adminUser.role
         },
         date: new Date(),
         remarks: remarks || ''
-    });
-
-    customer.adminRemarks = remarks;
+    };
+    
+    console.log("processApprovalAction: workflowHistory object before push:", historyEntry);
+    
+    const updatePayload = {
+        $set: {
+            adminRemarks: remarks
+        },
+        $push: {
+            workflowHistory: historyEntry
+        }
+    };
 
     if (action === 'Approve') {
-        customer.status = 'Approved';
-        customer.approvalStatus = 'Approved';
-        customer.approvedBy = adminUser._id;
-        customer.approvedDate = new Date();
-        customer.approvalIpAddress = ipAddress;
-        customer.approvalUserAgent = userAgent;
+        updatePayload.$set.status = 'Approved';
+        updatePayload.$set.approvalStatus = 'Approved';
+        updatePayload.$set.approvedBy = adminUser._id;
+        updatePayload.$set.approvedDate = new Date();
+        updatePayload.$set.approvalIpAddress = ipAddress;
+        updatePayload.$set.approvalUserAgent = userAgent;
+        updatePayload.$set.approvedByEmployee = {
+            employeeId: empIdStr,
+            name: adminUser.name || adminUser.username || '',
+            role: adminUser.role || ''
+        };
     } else if (action === 'Reject') {
-        customer.status = 'Rejected';
-        customer.approvalStatus = 'Rejected';
-        customer.rejectedDate = new Date();
-        customer.rejectionReason = remarks;
+        updatePayload.$set.status = 'Rejected';
+        updatePayload.$set.approvalStatus = 'Rejected';
+        updatePayload.$set.rejectedDate = new Date();
+        updatePayload.$set.rejectionReason = remarks;
     } else if (action === 'Send Back') {
-        customer.status = 'Correction Required';
+        updatePayload.$set.status = 'Correction Required';
     } else {
         throw { status: 400, message: 'Invalid action' };
     }
 
-    await customer.save();
-    return customer;
+    try {
+        console.log(`processApprovalAction: Saving customer [${customer.customerId}]...`);
+        
+        // If the corrupted approvedBy field exists and we aren't explicitly overwriting it (Approve), unset it
+        if (action !== 'Approve' && (customer.approvedBy === "" || typeof customer.approvedBy === 'string')) {
+            updatePayload.$unset = { approvedBy: 1 };
+        }
+
+        await Customer.updateOne({ _id: customerId }, updatePayload);
+        console.log(`processApprovalAction: Save successful!`);
+    } catch (saveErr) {
+        console.error('=== ERROR in processApprovalAction Save ===');
+        console.error('Message:', saveErr.message);
+        console.error('Name:', saveErr.name);
+        console.error('Stack:', saveErr.stack);
+        if (saveErr.errors) {
+            console.error('Validation Errors:', JSON.stringify(saveErr.errors, null, 2));
+        }
+        throw { status: 500, message: saveErr.message || 'Error saving approval action' };
+    }
+
+    // Fetch fresh copy to return
+    let updatedCustomer = null;
+    try {
+        updatedCustomer = await Customer.findById(customerId);
+    } catch (e) {
+        updatedCustomer = { ...customer, ...updatePayload.$set };
+    }
+
+    return updatedCustomer;
 };
 
 const findCustomerForApproval = async (customerId, user) => {

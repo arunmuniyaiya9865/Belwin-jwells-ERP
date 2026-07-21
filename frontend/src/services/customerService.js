@@ -11,7 +11,6 @@ const API = '/customers';
 
 // ── Progress callback handler ─────────────────────────────────────────────────
 const makeConfig = (onUploadProgress) => ({
-    headers: { 'Content-Type': 'multipart/form-data' },
     onUploadProgress: onUploadProgress
         ? (e) => onUploadProgress(Math.round((e.loaded * 100) / e.total))
         : undefined,
@@ -209,6 +208,23 @@ export const processAdminApprovalAction = async (customerId, action, remarks, ov
         action,
         remarks,
         overrideDuplicate
+    });
+    return response.data;
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// CORRECTION WORKFLOW
+// ─────────────────────────────────────────────────────────────────────────────
+
+export const getCorrectionRequests = async () => {
+    const response = await api.get(`${API}/corrections`);
+    return response.data;
+};
+
+export const processAdminCorrectionRequest = async (customerId, remarks, correctionFields = []) => {
+    const response = await api.put(`/customer-approval/request-correction/${customerId}`, {
+        remarks,
+        correctionFields
     });
     return response.data;
 };

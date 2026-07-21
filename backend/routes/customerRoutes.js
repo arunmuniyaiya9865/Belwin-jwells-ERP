@@ -47,6 +47,7 @@ const {
     getPendingCustomers,
     approveCustomerByApprovalId,
     rejectCustomerByApprovalId,
+    getCorrections,
 } = require('../controllers/customerController');
 
 
@@ -55,6 +56,7 @@ router.get('/next-id', protect, getNextCustomerId);
 router.get('/search', protect, getCustomers);
 router.get('/filter', protect, getCustomers);
 router.get('/pending', protect, getPendingCustomers);
+router.get('/corrections', protect, getCorrections);
 router.put('/approve/:customerId', protect, approveCustomerByApprovalId);
 router.put('/reject/:customerId', protect, validateRejection, rejectCustomerByApprovalId);
 

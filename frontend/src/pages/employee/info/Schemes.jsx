@@ -5,6 +5,7 @@ import PersonalLoanManager from '../../../components/schemes/PersonalLoanManager
 import ChitFundManager from '../../../components/schemes/ChitFundManager';
 import TwoWheelerLoanManager from '../../../components/schemes/TwoWheelerLoanManager';
 import { getCustomerById } from '../../../services/customerService';
+import { createGoldScheme, getGoldSchemes } from '../../../services/schemeService';
 
 const schemeCategories = [
   { id: 'Bellwin Gold Loan', name: 'Bellwin Gold Loan', icon: Landmark, color: 'text-yellow-600', bg: 'bg-yellow-50', border: 'border-yellow-200' },
@@ -33,15 +34,29 @@ const Schemes = () => {
     status: 'Active'
   });
 
+  const [customerInfo, setCustomerInfo] = useState('');
+
   const fetchSchemes = async () => {
     try {
-      const response = await fetch('/gold-schemes');
-      const data = await response.json();
-      if (response.ok) {
-        setSchemes(data);
-      }
+      const data = await getGoldSchemes();
+      setSchemes(data);
     } catch (error) {
       console.error('Error fetching schemes:', error);
+    }
+  };
+
+  const handleCustomerBlur = async () => {
+    if (!formData.customerId) return;
+    try {
+      setCustomerInfo('Loading...');
+      const res = await getCustomerById(formData.customerId);
+      if (res.success && res.data) {
+        setCustomerInfo(`${res.data.customerName} - ${res.data.mobileNumber} (${res.data.branch || 'Head Office'})`);
+      } else {
+        setCustomerInfo('Customer Not Found');
+      }
+    } catch (e) {
+      setCustomerInfo('Customer Not Found');
     }
   };
 
@@ -65,7 +80,6 @@ const Schemes = () => {
     setLoading(true);
     try {
       const isGold = selectedCategory === 'Bellwin Gold Loan';
-      const endpoint = isGold ? '/gold-schemes' : '/schemes';
       
       const payload = isGold ? {
         ...formData,
@@ -79,13 +93,8 @@ const Schemes = () => {
         penaltyPercent: formData.penaltyPercent ? Number(formData.penaltyPercent) : null,
       } : formData;
 
-      const response = await fetch(endpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-      const data = await response.json();
-      if (response.ok) {
+      if (isGold) {
+        await createGoldScheme(payload);
         toast.success(`${selectedCategory} added successfully!`);
         setFormData({
           customerId: '', schemeName: '', interestPercent: '', amountRs: '',
@@ -93,10 +102,11 @@ const Schemes = () => {
           interestRepaymentMonths: '', documentCharges: '', type: selectedCategory,
           penaltyPercent: '', status: 'Active'
         });
+        setCustomerInfo('');
         setShowAddForm(false);
         fetchSchemes();
       } else {
-        toast.error(data.message || 'Failed to add scheme');
+        toast.error('Only Gold Schemes are supported in this demo.');
       }
     } catch (error) {
       toast.error('An error occurred');
@@ -191,7 +201,8 @@ const Schemes = () => {
                     {/* Row 1 */}
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">Customer ID *</label>
-                      <input required type="text" name="customerId" value={formData.customerId} onChange={handleChange} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-1 focus:ring-erp-green focus:border-erp-green transition-colors" placeholder="e.g. CUST0001" />
+                      <input required type="text" name="customerId" value={formData.customerId} onBlur={handleCustomerBlur} onChange={handleChange} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-1 focus:ring-erp-green focus:border-erp-green transition-colors" placeholder="e.g. CUST0001" />
+                      {customerInfo && <span className="text-[10px] text-green-600 font-bold block mt-1">{customerInfo}</span>}
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">Scheme ID</label>

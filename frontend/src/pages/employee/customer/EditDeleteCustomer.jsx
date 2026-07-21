@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import {
   Search, Eye, Pencil, Trash2, X, RefreshCcw,
@@ -61,15 +61,15 @@ const InfoRow = ({ label, value, icon: Icon }) => (
 // ─────────────────────────────────────────────────────────────────────────────
 // Document slot – shows existing Cloudinary file + replacement picker
 // ─────────────────────────────────────────────────────────────────────────────
-const DocSlot = ({ label, existingUrl, newFile, onBrowse, onClear, inputRef, accept, hint }) => {
+const DocSlot = ({ label, existingUrl, newFile, onBrowse, onClear, inputRef, accept, hint, isError, onFileSelect }) => {
   const [imgErr, setImgErr] = useState(false);
   useEffect(() => setImgErr(false), [existingUrl]);
 
   return (
-    <div className="bg-white p-3 rounded-xl border border-gray-100 shadow-sm">
-      <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2 flex justify-between items-center">
+    <div className={`bg-white p-3 rounded-xl border shadow-sm ${isError ? 'border-red-400 bg-red-50' : 'border-gray-100'}`}>
+      <p className={`text-[10px] font-bold uppercase tracking-widest mb-2 flex justify-between items-center ${isError ? 'text-red-600' : 'text-gray-400'}`}>
         <span>{label}</span>
-        {hint && <span className="text-gray-300 font-normal normal-case">({hint})</span>}
+        {hint && <span className={`${isError ? 'text-red-400' : 'text-gray-300'} font-normal normal-case`}>({hint})</span>}
       </p>
 
       {newFile ? (
@@ -92,12 +92,12 @@ const DocSlot = ({ label, existingUrl, newFile, onBrowse, onClear, inputRef, acc
            </div>
         </div>
       ) : existingUrl ? (
-        <div className="relative group border border-gray-200 rounded-lg overflow-hidden shadow-sm aspect-video bg-gray-50">
+        <div className={`relative group border rounded-lg overflow-hidden shadow-sm aspect-video ${isError ? 'border-red-300 bg-red-50/50' : 'border-gray-200 bg-gray-50'}`}>
           {!imgErr ? (
             <img src={existingUrl} className="w-full h-full object-cover transition-transform group-hover:scale-105 duration-500" alt={label} onError={() => setImgErr(true)} />
           ) : (
             <div className="h-full flex flex-col items-center justify-center gap-1.5 p-4 text-center">
-              <ShieldAlert className="w-6 h-6 text-gray-300" />
+              <ShieldAlert className={`w-6 h-6 ${isError ? 'text-red-300' : 'text-gray-300'}`} />
               <a href={existingUrl} target="_blank" rel="noreferrer" className="text-[10px] text-blue-600 font-bold underline decoration-blue-200 underline-offset-2">PREVIEW DOCUMENT</a>
             </div>
           )}
@@ -112,8 +112,8 @@ const DocSlot = ({ label, existingUrl, newFile, onBrowse, onClear, inputRef, acc
         </div>
       ) : (
         <button type="button" onClick={onBrowse}
-          className="w-full aspect-video border-2 border-dashed border-gray-200 rounded-lg flex flex-col items-center justify-center gap-2 text-[10px] font-bold text-gray-400 hover:border-green-400 hover:text-green-600 hover:bg-green-50/30 transition-all group">
-          <div className="p-2 rounded-full bg-gray-50 group-hover:bg-green-100 transition-colors">
+          className={`w-full aspect-video border-2 border-dashed rounded-lg flex flex-col items-center justify-center gap-2 text-[10px] font-bold transition-all group ${isError ? 'border-red-300 text-red-500 hover:border-red-400 hover:text-red-600' : 'border-gray-200 text-gray-400 hover:border-green-400 hover:text-green-600'}`}>
+          <div className={`p-2 rounded-full transition-colors ${isError ? 'bg-red-50 group-hover:bg-red-100' : 'bg-gray-50 group-hover:bg-green-100'}`}>
             <Upload className="w-4 h-4" />
           </div>
           CLICK TO BROWSE
@@ -121,7 +121,7 @@ const DocSlot = ({ label, existingUrl, newFile, onBrowse, onClear, inputRef, acc
       )}
 
       <input ref={inputRef} type="file" hidden accept={accept}
-        onChange={(e) => { if (e.target.files?.[0]) handleFileSelect(label.toLowerCase().includes('photo') ? 'photo' : (label.toLowerCase().includes('aadhaar') ? 'aadhaarDoc' : 'proof2Doc'), e.target.files[0]); }} />
+        onChange={(e) => { if (e.target.files?.[0] && onFileSelect) onFileSelect(e.target.files[0]); }} />
     </div>
   );
 };
@@ -133,6 +133,7 @@ const EMPTY_FILES = { photo: null, aadhaarDoc: null, proof2Doc: null };
 
 const EditDeleteCustomer = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   // ── list ─────────────────────────────────────────────────────────────────
   const [customers, setCustomers]   = useState([]);
   const [loading, setLoading]       = useState(true);
@@ -201,7 +202,16 @@ const EditDeleteCustomer = () => {
     }
   }, [search, filters, sort]);
 
-  useEffect(() => { fetchCustomers(1); }, []);
+  useEffect(() => { 
+    fetchCustomers(1); 
+    
+    // Auto-open edit drawer if passed from another screen
+    if (location.state?.editCustomer) {
+      openEdit(location.state.editCustomer);
+      // Clear state so it doesn't reopen on refresh
+      navigate(location.pathname, { replace: true });
+    }
+  }, [location.state]);
 
   const handleSort = (field) => {
     const isAsc = sort.sortBy === field && sort.sortOrder === 'asc';
@@ -283,6 +293,19 @@ const EditDeleteCustomer = () => {
   const closeView = () => { setViewCustomer(null); setAuditLog([]); };
 
   // ── edit ──────────────────────────────────────────────────────────────────
+  const getFieldClass = (fieldName) => {
+    const isCorrection = editCustomer?.status === 'Correction Required';
+    const isFieldHighlighted = editCustomer?.correctionFields?.includes(fieldName);
+    
+    const base = "w-full px-4 py-2.5 rounded-xl text-xs font-bold outline-none transition-all shadow-sm ";
+    
+    if (isCorrection && isFieldHighlighted) {
+      return base + "bg-red-50 border border-red-400 text-red-900 focus:bg-white focus:ring-2 focus:ring-red-500/20 focus:border-red-500 placeholder-red-300";
+    }
+    
+    return base + "bg-gray-50 border border-gray-200 text-gray-800 focus:bg-white focus:ring-2 focus:ring-green-500/10 focus:border-green-500";
+  };
+
   const openEdit = (c) => {
     setViewCustomer(null);
     setNewFiles({ ...EMPTY_FILES });
@@ -370,6 +393,7 @@ const EditDeleteCustomer = () => {
       if (hasFiles) await uploadDocuments(editCustomer._id, newFiles);
 
       toast.success('Customer updated successfully!');
+      window.dispatchEvent(new Event('refresh_correction_count'));
       closeEdit();
       fetchCustomers(pagination.page, search, filters);
     } catch (err) {
@@ -1029,19 +1053,19 @@ const EditDeleteCustomer = () => {
                   <div className="grid grid-cols-2 gap-x-4 gap-y-4">
                     <div className="col-span-2">
                       <label className="block text-[10px] font-black text-gray-400 uppercase mb-1.5 ml-1 tracking-widest">Full Legal Name</label>
-                      <input name="customerName" value={editForm.customerName} onChange={handleEditChange} className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold text-gray-800 focus:bg-white focus:ring-2 focus:ring-green-500/10 focus:border-green-500 outline-none transition-all shadow-sm" />
+                      <input name="customerName" value={editForm.customerName} onChange={handleEditChange} className={getFieldClass('customerName')} />
                     </div>
                     <div>
                       <label className="block text-[10px] font-black text-gray-400 uppercase mb-1.5 ml-1 tracking-widest">Guardian Name</label>
-                      <input name="guardianName" value={editForm.guardianName} onChange={handleEditChange} className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold text-gray-800 focus:bg-white focus:ring-2 focus:ring-green-500/10 focus:border-green-500 outline-none transition-all shadow-sm" />
+                      <input name="guardianName" value={editForm.guardianName} onChange={handleEditChange} className={getFieldClass('guardianName')} />
                     </div>
                     <div>
                       <label className="block text-[10px] font-black text-gray-400 uppercase mb-1.5 ml-1 tracking-widest">Occupation</label>
-                      <input name="occupation" value={editForm.occupation} onChange={handleEditChange} className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold text-gray-800 focus:bg-white focus:ring-2 focus:ring-green-500/10 focus:border-green-500 outline-none transition-all shadow-sm" />
+                      <input name="occupation" value={editForm.occupation} onChange={handleEditChange} className={getFieldClass('occupation')} />
                     </div>
                     <div>
                       <label className="block text-[10px] font-black text-gray-400 uppercase mb-1.5 ml-1 tracking-widest">Date of Birth</label>
-                      <input type="date" name="dateOfBirth" value={editForm.dateOfBirth} onChange={handleEditChange} className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold text-gray-800 focus:bg-white focus:ring-2 focus:ring-green-500/10 focus:border-green-500 outline-none transition-all shadow-sm" />
+                      <input type="date" name="dateOfBirth" value={editForm.dateOfBirth} onChange={handleEditChange} className={getFieldClass('dateOfBirth')} />
                     </div>
                     <div className="flex gap-4">
                       <div className="flex-1">
@@ -1050,7 +1074,7 @@ const EditDeleteCustomer = () => {
                       </div>
                       <div className="flex-1">
                         <label className="block text-[10px] font-black text-gray-400 uppercase mb-1.5 ml-1 tracking-widest">Gender</label>
-                        <select name="gender" value={editForm.gender} onChange={handleEditChange} className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-[11px] font-bold text-gray-800 focus:bg-white focus:border-green-500 outline-none transition-all shadow-sm cursor-pointer">
+                        <select name="gender" value={editForm.gender} onChange={handleEditChange} className={getFieldClass('gender')}>
                           <option>Male</option>
                           <option>Female</option>
                           <option>Other</option>
@@ -1071,21 +1095,21 @@ const EditDeleteCustomer = () => {
                       <label className="block text-[10px] font-black text-gray-400 uppercase mb-1.5 ml-1 tracking-widest flex items-center gap-2">
                          <Phone className="w-3 h-3" /> Primary Mobile
                       </label>
-                      <input type="tel" name="mobileNumber" value={editForm.mobileNumber} maxLength={10} onChange={handleEditChange} className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold text-gray-800 focus:bg-white focus:ring-2 focus:ring-green-500/10 focus:border-green-500 outline-none transition-all shadow-sm" />
+                      <input type="tel" name="mobileNumber" value={editForm.mobileNumber} maxLength={10} onChange={handleEditChange} className={getFieldClass('mobileNumber')} />
                     </div>
                     <div>
                       <label className="block text-[10px] font-black text-gray-400 uppercase mb-1.5 ml-1 tracking-widest">Alternate Phone</label>
-                      <input type="tel" name="alternateNumber" value={editForm.alternateNumber} maxLength={10} onChange={handleEditChange} className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold text-gray-800 focus:bg-white focus:ring-2 focus:ring-green-500/10 focus:border-green-500 outline-none transition-all shadow-sm" />
+                      <input type="tel" name="alternateNumber" value={editForm.alternateNumber} maxLength={10} onChange={handleEditChange} className={getFieldClass('alternateNumber')} />
                     </div>
                     <div>
                       <label className="block text-[10px] font-black text-gray-400 uppercase mb-1.5 ml-1 tracking-widest flex items-center gap-2">
                          <ShieldAlert className="w-3 h-3" /> Aadhaar Identification
                       </label>
-                      <input name="aadhaarNumber" value={editForm.aadhaarNumber} maxLength={14} placeholder="0000 0000 0000" onChange={handleEditChange} className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold text-gray-800 focus:bg-white focus:ring-2 focus:ring-green-500/10 focus:border-green-500 outline-none transition-all shadow-sm tracking-[0.1em]" />
+                      <input name="aadhaarNumber" value={editForm.aadhaarNumber} maxLength={14} placeholder="0000 0000 0000" onChange={handleEditChange} className={getFieldClass('aadhaarNumber') + " tracking-[0.1em]"} />
                     </div>
                     <div>
                       <label className="block text-[10px] font-black text-gray-400 uppercase mb-1.5 ml-1 tracking-widest">PAN Card Number</label>
-                      <input name="panNumber" value={editForm.panNumber} maxLength={10} style={{ textTransform: 'uppercase' }} onChange={handleEditChange} className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold text-gray-800 focus:bg-white focus:ring-2 focus:ring-green-500/10 focus:border-green-500 outline-none transition-all shadow-sm tracking-[0.1em]" />
+                      <input name="panNumber" value={editForm.panNumber} maxLength={10} style={{ textTransform: 'uppercase' }} onChange={handleEditChange} className={getFieldClass('panNumber') + " tracking-[0.1em]"} />
                     </div>
                   </div>
                 </div>
@@ -1101,23 +1125,23 @@ const EditDeleteCustomer = () => {
                       <label className="block text-[10px] font-black text-gray-400 uppercase mb-1.5 ml-1 tracking-widest flex items-center gap-2">
                          <MapPin className="w-3 h-3" /> Door No / Street
                       </label>
-                      <input name="doorStreet" value={editForm.doorStreet} onChange={handleEditChange} className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold text-gray-800 focus:bg-white focus:ring-2 focus:ring-green-500/10 focus:border-green-500 outline-none transition-all shadow-sm" />
+                      <input name="doorStreet" value={editForm.doorStreet} onChange={handleEditChange} className={getFieldClass('doorStreet')} />
                     </div>
                     <div>
                       <label className="block text-[10px] font-black text-gray-400 uppercase mb-1.5 ml-1 tracking-widest">Area / Landmark</label>
-                      <input name="area" value={editForm.area} onChange={handleEditChange} className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold text-gray-800 focus:bg-white focus:ring-2 focus:ring-green-500/10 focus:border-green-500 outline-none transition-all shadow-sm" />
+                      <input name="area" value={editForm.area} onChange={handleEditChange} className={getFieldClass('area')} />
                     </div>
                     <div>
                       <label className="block text-[10px] font-black text-gray-400 uppercase mb-1.5 ml-1 tracking-widest">City</label>
-                      <input name="city" value={editForm.city} onChange={handleEditChange} className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold text-gray-800 focus:bg-white focus:ring-2 focus:ring-green-500/10 focus:border-green-500 outline-none transition-all shadow-sm" />
+                      <input name="city" value={editForm.city} onChange={handleEditChange} className={getFieldClass('city')} />
                     </div>
                     <div>
                       <label className="block text-[10px] font-black text-gray-400 uppercase mb-1.5 ml-1 tracking-widest">Postal Code</label>
-                      <input name="postalCode" value={editForm.postalCode} maxLength={6} onChange={handleEditChange} className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold text-gray-800 focus:bg-white focus:ring-2 focus:ring-green-500/10 focus:border-green-500 outline-none transition-all shadow-sm tracking-[0.2em]" />
+                      <input name="postalCode" value={editForm.postalCode} maxLength={6} onChange={handleEditChange} className={getFieldClass('postalCode') + " tracking-[0.2em]"} />
                     </div>
                     <div className="col-span-2">
                       <label className="block text-[10px] font-black text-gray-400 uppercase mb-1.5 ml-1 tracking-widest">Permanent Registry Address</label>
-                      <textarea name="permanentAddress" value={editForm.permanentAddress} onChange={handleEditChange} rows={2} className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold text-gray-800 focus:bg-white focus:ring-2 focus:ring-green-500/10 focus:border-green-500 outline-none transition-all shadow-sm resize-none" />
+                      <textarea name="permanentAddress" value={editForm.permanentAddress} onChange={handleEditChange} rows={2} className={getFieldClass('permanentAddress') + " resize-none"} />
                     </div>
                   </div>
                 </div>
@@ -1137,6 +1161,8 @@ const EditDeleteCustomer = () => {
                         accept="image/*"
                         onBrowse={() => photoRef.current?.click()}
                         onClear={() => clearFile('photo')}
+                        isError={editCustomer?.status === 'Correction Required' && editCustomer?.correctionFields?.includes('customerPhoto')}
+                        onFileSelect={(file) => handleFileSelect('photo', file)}
                      />
                      <DocSlot 
                         label="Primary Aadhaar Proof"
@@ -1146,12 +1172,14 @@ const EditDeleteCustomer = () => {
                         accept="image/*,application/pdf"
                         onBrowse={() => aadhaarRef.current?.click()}
                         onClear={() => clearFile('aadhaarDoc')}
+                        isError={editCustomer?.status === 'Correction Required' && editCustomer?.correctionFields?.includes('aadhaarDocument')}
+                        onFileSelect={(file) => handleFileSelect('aadhaarDoc', file)}
                      />
                      <div className="col-span-2">
                         <div className="flex items-end gap-4">
                            <div className="flex-1">
                               <label className="block text-[10px] font-black text-gray-400 uppercase mb-1.5 ml-1 tracking-widest">Secondary Proof Identity Name</label>
-                              <input name="proof2Name" value={editForm.proof2Name} onChange={handleEditChange} placeholder="e.g. EB Bill, Voter Id" className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold text-gray-800 focus:bg-white focus:border-green-500 outline-none transition-all mb-4 mt-2" />
+                              <input name="proof2Name" value={editForm.proof2Name} onChange={handleEditChange} placeholder="e.g. EB Bill, Voter Id" className={getFieldClass('proof2Name') + " mb-4 mt-2"} />
                               <DocSlot 
                                 label="Secondary Instrument Upload"
                                 existingUrl={editCustomer.proof2DocumentUrl}
@@ -1160,6 +1188,8 @@ const EditDeleteCustomer = () => {
                                 accept="image/*,application/pdf"
                                 onBrowse={() => proof2Ref.current?.click()}
                                 onClear={() => clearFile('proof2Doc')}
+                                isError={editCustomer?.status === 'Correction Required' && editCustomer?.correctionFields?.includes('proof2Document')}
+                                onFileSelect={(file) => handleFileSelect('proof2Doc', file)}
                               />
                            </div>
                         </div>
@@ -1185,7 +1215,7 @@ const EditDeleteCustomer = () => {
                   className="flex-1 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white text-xs font-black py-4 rounded-xl hover:from-emerald-600 hover:to-emerald-700 transition-all shadow-[0_4px_14px_rgba(16,185,129,0.3)] hover:shadow-[0_6px_20px_rgba(16,185,129,0.4)] active:scale-95 flex items-center justify-center gap-2 uppercase tracking-[0.1em]"
                 >
                   {editLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
-                  {editLoading ? 'Authorizing Updates...' : 'Synchronize Changes'}
+                  {editLoading ? 'Authorizing Updates...' : (editCustomer.status === 'Correction Required' ? 'Update & Resubmit' : 'Synchronize Changes')}
                 </button>
                 )}
                 <button onClick={closeEdit} disabled={editLoading} className="px-8 py-4 bg-slate-50 text-slate-500 text-xs font-black rounded-xl hover:bg-slate-100 transition-all border border-slate-200 uppercase tracking-[0.1em] shadow-sm flex-1">

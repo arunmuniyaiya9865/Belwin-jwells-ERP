@@ -4,6 +4,7 @@ const { Customer } = require('../models/Customer');
 const GoldStock = require('../models/GoldStock');
 const { syncGoldStockStatus } = require('./goldStockController');
 const mongoose = require('mongoose');
+const calc = require('../utils/loanCalculations');
 
 // @desc    Create new loan
 // @route   POST /api/loans
@@ -78,6 +79,91 @@ const createLoan = async (req, res, next) => {
       }
     }
 
+    // Gold Scheme Validation & SINGLE SOURCE OF TRUTH Extraction
+    let goldSchemeObjectId = null;
+    let safeScheme = null;
+    if (schemeId) {
+      const GoldScheme = require('../models/GoldScheme');
+      const scheme = await GoldScheme.findOne({ schemeId });
+      if (!scheme) {
+        return next(new ApiError(404, 'Gold Scheme not found'));
+      }
+      if (scheme.status !== 'Active') {
+        return next(new ApiError(400, 'This Gold Scheme has already been used for a loan or is inactive.'));
+      }
+      goldSchemeObjectId = scheme._id;
+      safeScheme = scheme;
+    } else {
+      return next(new ApiError(400, 'Gold Scheme ID is required'));
+    }
+
+    // --- RECALCULATION ENGINE (SINGLE SOURCE OF TRUTH) ---
+    // Force override all financial values
+    const safeGramRate = Number(safeScheme.gramRate) || 0;
+    const safeInterestPercent = Number(safeScheme.interestPercent) || 0;
+    const safeMaturePeriod = Number(safeScheme.maturePeriod) || 0;
+    
+    // 1. Articles Validation
+    const safeArticles = [];
+    if (articles && Array.isArray(articles)) {
+      for (const art of articles) {
+        if (art.category) {
+          const totWt = Number(art.totWt) || 0;
+          const stoneWt = Number(art.stoneWt) || 0;
+          
+          if (stoneWt > totWt) {
+            return next(new ApiError(400, 'Stone Weight cannot exceed Total Weight'));
+          }
+
+          const nettWt = calc.calculateNetWeight(totWt, stoneWt);
+          if (nettWt < 0) {
+            return next(new ApiError(400, 'Net Weight cannot be negative'));
+          }
+
+          const totalVal = calc.calculateArticleValue(nettWt, safeGramRate);
+          safeArticles.push({
+            ...art,
+            totWt,
+            stoneWt,
+            nettWt,
+            gramRate: safeGramRate,
+            total: totalVal
+          });
+        }
+      }
+    }
+
+    // 2. Totals
+    const safeTotalWt = calc.calculateTotalGoldWeight(safeArticles);
+    const safeTotalGoldValue = calc.calculateTotalGoldValue(safeArticles);
+
+    // 3. Eligible Loan Validation
+    // Assume 75% for loan percentage if scheme does not provide a specific one, or 75 default.
+    // Given the prompt, "Loan Percentage = 75%" is the business rule context. 
+    const safeEligibleLoanAmount = calc.calculateEligibleLoanAmount(safeTotalGoldValue, 75);
+    
+    const requestedLoanAmount = Number(loanAmount) || 0;
+    if (requestedLoanAmount > safeEligibleLoanAmount) {
+       return next(new ApiError(400, `Requested Loan Amount (${requestedLoanAmount}) exceeds Eligible Loan Amount (${safeEligibleLoanAmount})`));
+    }
+
+    // 4. Interest & Dates
+    const safeInterestAmount = calc.calculateInterest(requestedLoanAmount, safeInterestPercent);
+    const safeStartDate = loanStartDate || new Date().toISOString().slice(0, 10);
+    const safeEndDate = calc.calculateLoanEndDate(safeStartDate, safeMaturePeriod);
+    const safeTotalDays = calc.calculateTotalDays(safeStartDate, safeEndDate);
+    const safeRemainingDays = calc.calculateRemainingDays(safeEndDate);
+
+    // 5. Settlement
+    const safeDocCharge = Number(documentCharges) || Number(documentCharge) || 0;
+    const safePenalty = Number(penaltyPercent) || 0;
+    const safeSettlementAmount = calc.calculateSettlementAmount(
+      requestedLoanAmount, // remainingLoan defaults to requested
+      safeInterestAmount, // remainingInterest defaults to base interest
+      safePenalty,
+      safeDocCharge
+    );
+
     const newLoan = await Loan.create({
       customerId: customerStringId,
       customerObjectId,
@@ -86,37 +172,56 @@ const createLoan = async (req, res, next) => {
       fatherHusbandName,
       address,
       loanDate,
-      loanStartDate,
-      loanEndDate,
-      loanAmount,
-      remainingLoanAmount,
+      loanStartDate: safeStartDate,
+      loanEndDate: safeEndDate,
+      loanAmount: requestedLoanAmount,
+      remainingLoanAmount: requestedLoanAmount,
       status: status || 'Pending',
-      totalNoOfDays,
-      interestRate,
-      additionalInterestRate,
-      totalPaidInterestAmount,
-      totalInterestPaidDays,
-      remainingDays,
-      remainingInterestAmount,
-      documentCharge,
-      fullSettlementAmount,
+      totalNoOfDays: safeTotalDays,
+      interestRate: safeInterestPercent, // Trust DB
+      additionalInterestRate: Number(additionalInterestRate) || 0,
+      totalPaidInterestAmount: 0, // Reset
+      totalInterestPaidDays: 0,
+      remainingDays: safeRemainingDays,
+      remainingInterestAmount: safeInterestAmount,
+      documentCharge: safeDocCharge,
+      fullSettlementAmount: safeSettlementAmount,
       receiptEntry,
-      articles,
-      totalWt,
+      articles: safeArticles,
+      totalWt: safeTotalWt,
       payments,
       repledgeDetails,
       schemeId,
       schemeName,
       employeeId,
       employeeName,
-      interestPercent,
-      gramRate,
-      minimumGram,
-      maturePeriod,
-      interestRepaymentMonths,
-      documentCharges,
-      penaltyPercent
+      createdBy: req.user ? req.user._id : null,
+      branch: req.user ? req.user.branchId : null,
+      goldSchemeObjectId,
+      interestPercent: safeInterestPercent,
+      gramRate: safeGramRate,
+      minimumGram: safeScheme.minimumGram,
+      maturePeriod: safeMaturePeriod,
+      interestRepaymentMonths: safeScheme.interestRepaymentMonths,
+      documentCharges: safeDocCharge,
+      penaltyPercent: safePenalty,
+      
+      // Audit Injection
+      calculationVersion: 'v1.0',
+      calculatedAt: new Date(),
+      calculatedBy: 'Backend Calculation Engine'
     });
+
+    // Link and Update Gold Scheme
+    if (goldSchemeObjectId) {
+      const GoldScheme = require('../models/GoldScheme');
+      await GoldScheme.findByIdAndUpdate(goldSchemeObjectId, {
+        status: 'Utilized',
+        linkedLoanId: newLoan.loanId,
+        linkedLoanObjectId: newLoan._id,
+        utilizedAt: new Date()
+      });
+    }
 
     // --- AUTOMATED GOLD STOCK LEDGER CREATION ---
     if (newLoan.articles && newLoan.articles.length > 0) {
